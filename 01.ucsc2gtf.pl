@@ -2,7 +2,7 @@
 
 #use lib "/Users/d.grun/data/bin";
 # use lib "/home/d.grun/bin";
-use lib "/Users/abelvertesy/x_reactivation/analysis/DevCell_analysis/06.5.Reference_generation";
+# use lib "/Users/abelvertesy/x_reactivation/analysis/DevCell_analysis/06.5.Reference_generation"; # for tools.pm
 use tools;
 
 if (scalar @ARGV == 1)
