@@ -1,0 +1,8 @@
+See also 
+https://github.com/roryk/tiny-test-data/blob/master/genomes/ERCC/ERCC92/seq/ERCC92.fa
+
+(this is the original, in 60 character lines), and
+
+https://github.com/NCBI-Hackathons/HASSL_Homogeneous_Analysis_of_SRA_rnaSequencing_Libraries/blob/master/Spike-Ins/ERCC92/ERCC92.gtf
+
+which also contains the GenBank identifiers
