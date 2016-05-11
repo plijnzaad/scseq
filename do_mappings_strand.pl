@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w -s
-use lib '/hpc/hub_oudenaarden/bin/';
 use tools;
 
 if (!($r && $f1 && $out && $t)){
@@ -36,7 +35,7 @@ $pflag = 1 if ($f1 && $f2);
 
 
 if ($i){
-    $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa index -a ".$ind." ".$r;
+    $str = "bwa index -a ".$ind." ".$r;
     print $str."\n";
     (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
 }
@@ -60,16 +59,16 @@ if ( $npr != 2 ){
 	    (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
 	}
 	if ( $i == 0 ) { $B = $BL; } else { $B = $BR; }
-	$str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
+	$str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
 	print $str."\n";
 	(system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
     }
     
     if ( $nsam == 0 ){
 	if ($pflag){
-	    $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa sampe -n ".$n." -N ".$N." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+	    $str = "bwa sampe -n ".$n." -N ".$N." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
 	}else{
-	    $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa samse -n ".$n." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+	    $str = "bwa samse -n ".$n." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
 	}
     }
     print $str."\n";
