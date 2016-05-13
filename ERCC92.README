@@ -1,111 +1,40 @@
-Apart from formatting (single line vs. 60 character lines), the ERCC92_reformat.fa is identical with 
-
-https://github.com/roryk/tiny-test-data/blob/master/genomes/ERCC/ERCC92/seq/ERCC92.fa
-
-and with 
-
-  http://tools.invitrogen.com/downloads/ERCC92.fa
 
 There is also 
 
 https://github.com/NCBI-Hackathons/HASSL_Homogeneous_Analysis_of_SRA_rnaSequencing_Libraries/blob/master/Spike-Ins/ERCC92/ERCC92.gtf
 
-which also contains the GenBank identifiers.
+which also contains the GenBank identifiers
+(turns out they are 64 sythetic sequences  and 28 from Methanocaldococcus jannaschii.
 
-(Maybe check https://github.com/jdblischak/singleCellSeq/blob/master/code/create-genome.sh )
+### pseudo chromosome:
 
-GenBank ids of ERCC:
+seqconvert -from fa -to tab < ERCC92.fa  > ERCC92.tab  
 
-DQ459430
-DQ516784
-DQ516752
-DQ668364
-DQ883670
-EF011062
-DQ875385
-DQ883664
-DQ459420
-DQ883651
-DQ855004
-DQ854993
-DQ883689
-DQ459419
-DQ459431
-DQ516796
-DQ855001
-DQ459413
-DQ883656
-DQ883661
-EF011069
-DQ516783
-DQ516787
-DQ459424
-DQ516748
-DQ883671
-DQ516740
-DQ516785
-DQ516731
-DQ668366
-DQ459418
-DQ668356
-DQ516763
-DQ459426
-DQ516786
-DQ883653
-DQ459421
-DQ883654
-DQ668358
-DQ516754
-DQ516778
-DQ883650
-DQ516742
-DQ883673
-DQ883652
-DQ854991
-DQ516780
-DQ883682
-DQ883669
-DQ516791
-DQ459425
-DQ516759
-DQ459429
-DQ516758
-DQ459415
-DQ875387
-DQ516815
-DQ668365
-DQ854998
-DQ883685
-DQ459422
-DQ883663
-DQ668367
-DQ459412
-DQ854992
-DQ516782
-DQ459427
-EF011072
-DQ855003
-DQ516739
-EF011063
-DQ855000
-DQ516777
-DQ883646
-DQ668362
-DQ854995
-DQ875386
-DQ516790
-DQ883642
-DQ883659
-DQ854997
-DQ883643
-DQ839618
-DQ516795
-DQ883658
-DQ516750
-DQ668359
-DQ516779
-DQ668363
-DQ516776
-DQ516773
-DQ854994
+cd /home/gen/philip/git/hubrechtseq/t
+
+alias seqconvert=~/svn/pub/tools/sequence/seqconvert 
+
+spacer=NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN  # 50 N's
+
+( echo -ne "errc92_pseudochromosome\t"
+  tcols 2 < ERCC92.tab  | while read seq; do
+  echo -n $spacer$seq
+done
+echo $spacer ) | seqconvert -from tab -to fa > errc92_pseudochromosome.fa
+
+( echo -ne "holstegelab_EC_pseudochromosome\t"
+  tcols 2 < holstegelab_EC.tab  | while read seq; do
+  echo -n $spacer$seq
+done
+echo $spacer ) | seqconvert -from tab -to fa > holstegelab_EC_pseudochromosome.fa
+
+### combined:
+
+( echo -ne "ercc92_holstegelab_pseudochromosome\t"
+  cat ERCC92.tab holstegelab_EC.tab | tcols 2  | while read seq; do
+  echo -n $spacer$seq
+done
+echo $spacer ) | seqconvert -from tab -to fa > ercc92_holstegelab_pseudochromosome.fa
+
+## next: create the gtf'?
 
