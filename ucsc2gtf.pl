@@ -23,7 +23,7 @@ if (scalar @ARGV == 1) {
 $utr = 0 if !$utr;
 open(OUT,">",$out);
 open(OUT2,">",$m);
-open(IN,"<",$in);
+open(IN,"<",$in) or die "$in: $!";
 while(<IN>){
   chomp;
   next if /^\#/;

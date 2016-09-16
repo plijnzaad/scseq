@@ -1,20 +1,17 @@
 #!/usr/bin/perl -s -w
 
-#use lib "/Users/d.grun/data/bin";
-use lib "/Users/abelvertesy/x_reactivation/analysis/DevCell_analysis/06.5.Reference_generation";
 use tools;
 
-if (scalar @ARGV == 1)
-{
-    die "usage: -in=INPUT.gtf -cl=clusters_list.csv -out=OUTPUT.gtf\n" if ($ARGV[0] eq "help");
+if (scalar @ARGV == 1) {
+    die "usage: -in=INPUT.gtf -cl=clusters_list.tsv -out=OUTPUT.gtf\n" if ($ARGV[0] eq "help");
 }
 
-# What is -cl=clusters_list.csv
+# clusters_list.csv comes from 
 
 %stop  = ();
 %strand = ();
 %chr=();
-open(IN,"<",$cl);
+open(IN,"<",$cl) || die "$cl: $!";
 while(<IN>){
     chomp;
     ($cl_name,$e) = split(/\t/);
@@ -25,7 +22,9 @@ while(<IN>){
 }
 close(IN);
 
-open(IN,"<",$in);
+die "$cl: no clusters read " unless int(%clust);
+
+open(IN,"<",$in) || die "$in: $!";
 while(<IN>){
     chomp;
     next if $_ =~ /^\#/;
@@ -44,6 +43,7 @@ while(<IN>){
     }
 }
 close(IN);
+
 open(OUT,">",$out);
 foreach $id (sort keys %stop){
     @start    = sort {$a <=> $b} keys %{$stop{$id}};
