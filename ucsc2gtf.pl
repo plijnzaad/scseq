@@ -5,10 +5,21 @@
 # use lib "/Users/abelvertesy/x_reactivation/analysis/DevCell_analysis/06.5.Reference_generation"; # for tools.pm
 use tools;
 
-if (scalar @ARGV == 1)
-{
+### converts UCSC table file (mysql table with headers
+### '#bin,name,chrom,strand,txStart,txEnd,cdsStart,cdsEnd,exonCount,exonStarts,exonEnds')
+### to a GTF file (-out argument), and mapping from gene -> isoform transcript ids
+### (in format: gene.'__'. chromosome \t refseqid '__' chromosome '__' 1
+### The addition of chromosome name is needed for alternate locus groups (i.e. alternate partial assemblies; typically
+### for part of the other half of a diploid genome), as they often have the same genes mapping there.
+### Looks like the --utr=3,5 only outputs the 3 or 5' UTRs, in weird format: 
+#### ---->>>>------>>>>------====  (untransl exon, intron, untransl exon, partly translated exon)
+#### |-----------------------| is transcript coordinates (should have been called 5UTR or 3UTR)
+####                   |-----| is the untranslated part of the first exon (unclear what to call this)
+
+if (scalar @ARGV == 1) {
     die "usage: -in=INPUT.ucsc_format -out=OUTPUT.gtf -m=gene2isoforms.tsv -utr=0,3,5\n" if ($ARGV[0] eq "help");
 }
+
 $utr = 0 if !$utr;
 open(OUT,">",$out);
 open(OUT2,">",$m);
@@ -19,15 +30,11 @@ while(<IN>){
   ($dum,$name,$chr,$str,$start,$end,$cdsStart,$cdsEnd,$dum,$exstart,$exend,$dum,$name2)=split(/\t/);
   @S = split(/\,/,$exstart);
   @E = split(/\,/,$exend);
-  $sid = $name2."__".$chr;
-  $t   = $name."__".$chr;
-  if (!exists($count{$t})){
-    $count{$t} = 1;
-  }else{
-    $count{$t} ++;
-  }
-  $tid = $name."__".$chr."__".$count{$t};
-  push(@{$n{$sid}},$tid);
+  $sid = $name2."__".$chr;              # gene_id
+  $t   = $name."__".$chr;               # refseqid, i.e. transcript name
+  $count{$t}++;
+  $tid = $name."__".$chr."__".$count{$t}; # transcript_id
+  push(@{$n{$sid}},$tid);                 # mappings of gene_id
   if ( $utr == 0 ){
     print OUT join("\t",($chr,"UCSC","transcript",$start,$end,0,$str,".", "gene_id \"".$name2."\"; transcript_id \"".$tid."\";"))."\n";
     for $i (0..$#S){
