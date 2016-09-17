@@ -9,9 +9,12 @@ use tools;
 ### The addition of chromosome name is needed for alternate locus groups (i.e. alternate partial assemblies; typically
 ### for part of the other half of a diploid genome), as they often have the same genes mapping there.
 ### Looks like the --utr=3,5 only outputs the 3 or 5' UTRs, in weird format: 
-#### ---->>>>------>>>>------====  (--- : untransl exon, >>>: intron, ===: translated exon)
-#### |<- - - - - - - - - - ->| is transcript coordinates (should have been called 5UTR or 3UTR)
-####                   |<- ->| is the untranslated part of the first exon (unclear what to call this)
+### ---->>>>------>>>>------====  (--- : untransl exon, >>>: intron, ===: translated exon)
+### |<- - - - - - - - - - ->| is transcript coordinates (should have been called 5UTR or 3UTR)
+###                   |<- ->| is the untranslated part of the first exon (unclear what to call this)
+
+### See also genePredToGtf and 
+### http://genomewiki.ucsc.edu/index.php/Genes_in_gtf_or_gff_format
 
 if (scalar @ARGV == 1) {
     die "usage: -in=INPUT.ucsc_format -out=OUTPUT.gtf -m=gene2isoforms.tsv -utr=0,3,5\n" if ($ARGV[0] eq "help");
