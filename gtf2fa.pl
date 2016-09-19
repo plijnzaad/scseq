@@ -33,7 +33,7 @@ while(<IN>){
   $id = get_id($_,$f);
   if (!exists($first{$id})){
     if ($flag){
-      $seq = get_sequence(\%exons, $genome, $region);
+      $seq = get_sequence(\%exons, $genome, $chromosome);
       $seq = revcompl($seq) if $str eq "-";
       print ">".$ID."\n".$seq."\n";
     }
@@ -42,7 +42,7 @@ while(<IN>){
     $flag       = 1;
     $first{$id} = 1;
     $ID         = $id;
-    $region     = $F[0];
+    $chromosome     = $F[0];
     $str        = $F[6];
     %exons      = ();
   }
@@ -51,9 +51,9 @@ while(<IN>){
 print STDERR "\ndone\n";
 
 ### also finish the very last sequence:
-$seq = get_sequence(\%exons,$genome,$region);
+$seq = get_sequence(\%exons,$genome,$chromosome);
 $seq = revcompl($seq) if $str eq "-";
-print ">".$id."\n".$seq."\n" if exists($genome->{$region});
+print ">".$id."\n".$seq."\n" if exists($genome->{$chromosome});
 close(IN);
 
 foreach (sort keys %ns ){
@@ -67,19 +67,14 @@ exit 0;
 
 
 sub get_sequence {
-  $qhash = shift; # exons
-  $rhash = shift; # genome
-  $key   = shift; # region
+  my($exons, $genome, $chr)=@_;
   $flag  = 1;
   my $seq="";
-  foreach $k (sort {$a<=>$b} keys %$qhash){
-    if ($flag){
-      $seq = substr($rhash->{$key}, $k-1, $qhash->{$k} - $k + 1);
-    }else{
-      $seq = $seq.substr($rhash->{$key}, $k-1, $qhash->{$k} - $k + 1);
-    }
-    $flag = 0;
+  return "" unless $genome->{$chr};
+  foreach $k (sort {$a<=>$b} keys %$exons){
+    $seq .=substr($genome->{$chr}, $k-1, $exons->{$k} - $k + 1);
   }
+  $flag = 0;
   return $seq;
 }
 
