@@ -1,10 +1,6 @@
 #!/usr/bin/perl -w -s
 
-#use lib "/Users/d.grun/data/bin";
-# use lib "/home/d.grun/bin";
-# use lib "/Users/abelvertesy/Mount_points/X_React/05.5.Reference_generation/";
 use tools;
-
 
 if (scalar @ARGV == 1){
     die "usage: -in=INPUT.gtf -ref=GENOME.fa -f=ID field name\n" if $ARGV[0] eq "help";
@@ -16,7 +12,7 @@ fasta2hash(\%genome,$ref);
 $j = 0;
 $flag  = 0;
 %first = ();
-open(IN,"<",$in);
+open(IN,"<",$in) || die "$in: $!";
 while(<IN>){
   chomp;
   @F = split(/\t/);
