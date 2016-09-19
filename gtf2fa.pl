@@ -3,8 +3,10 @@
 ### this is very very slow, and very badly coded (meaningless names,
 ### globals all over the place). Better download the CCDS transcriptome, or use bedtools getfasta
 
-die "Better use 
-  bedtools getfasta -s -name -fi test.fa -bed GRCh38-RefSeqgenes-isomerged.gtf -fo mRNA.fa 2> log.txt
+die "Better use  gffread from the CuffLinks suite: 
+
+  gffread genes.gtf -g reference.fa -w mRNA.fa
+
 ";
 
 use tools;
