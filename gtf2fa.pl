@@ -1,7 +1,11 @@
 #!/usr/bin/perl -w -s
 
 ### this is very very slow, and very badly coded (meaningless names,
-### globals all over the place). Better download the CCDS transcriptome
+### globals all over the place). Better download the CCDS transcriptome, or use bedtools getfasta
+
+die "Better use 
+  bedtools getfasta -s -name -fi test.fa -bed GRCh38-RefSeqgenes-isomerged.gtf -fo mRNA.fa 2> log.txt
+";
 
 use tools;
 
@@ -35,7 +39,7 @@ while(<IN>){
     if ($flag){
       $seq = get_sequence(\%exons, $genome, $chromosome);
       $seq = revcompl($seq) if $str eq "-";
-      print ">".$ID."\n".$seq."\n";
+      print ">".$ID."\n".$seq."\n";     # should print in 60 bp straight away
     }
     $j ++;
     print STDERR $j."\r" if $j % 100 ==0; 
@@ -46,14 +50,14 @@ while(<IN>){
     $str        = $F[6];
     %exons      = ();
   }
-  $exons{$F[3]} = $F[4];
+  $exons{$F[3]} = $F[4];  ### should not be hash, but list of pairs ...
 }
 print STDERR "\ndone\n";
 
 ### also finish the very last sequence:
 $seq = get_sequence(\%exons,$genome,$chromosome);
 $seq = revcompl($seq) if $str eq "-";
-print ">".$id."\n".$seq."\n" if exists($genome->{$chromosome});
+print ">".$id."\n".$seq."\n" if exists($genome->{$chromosome}); ### should reformat to 60 bp reads
 close(IN);
 
 foreach (sort keys %ns ){
@@ -71,8 +75,13 @@ sub get_sequence {
   $flag  = 1;
   my $seq="";
   return "" unless $genome->{$chr};
-  foreach $k (sort {$a<=>$b} keys %$exons){
-    $seq .=substr($genome->{$chr}, $k-1, $exons->{$k} - $k + 1);
+  my @exon_starts=sort {$a<=>$b} keys %$exons;
+  if ($exon_starts[-1] > length($genome->{$chr})) { 
+    print STDERR "exon lies beyond end of chromosome, error in reference genome, ignored";
+    return "";
+  }
+  foreach $start ( @exon_starts ) {
+    $seq .= substr($genome->{$chr}, $start-1, $exons->{$start} - $start + 1);
   }
   $flag = 0;
   return $seq;
