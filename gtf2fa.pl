@@ -1,38 +1,44 @@
 #!/usr/bin/perl -w -s
 
+### this is very very slow, and very badly coded (meaningless names,
+### globals all over the place). Better download the CCDS transcriptome
+
 use tools;
 
 if (scalar @ARGV == 1){
-    die "usage: -in=INPUT.gtf -ref=GENOME.fa -f=ID field name\n" if $ARGV[0] eq "help";
+    die "usage: -in=INPUT.gtf -ref=GENOME.fa -f=ID field name   > transcripts.fa 2> log.txt \n" if $ARGV[0] eq "help";
 }
 $f = "transcript_id" if !$f;
 
-%genome = ();
-fasta2hash(\%genome,$ref);
+$genome = {};
+warn "reading genome from $ref ...\n";
+$genome=fasta2hash($ref);
 $j = 0;
 $flag  = 0;
 %first = ();
+
+## open(TERM, ">> /dev/tty") or die "/dev/tty: $!";
+
+print STDERR "reading $in ...";
 open(IN,"<",$in) || die "$in: $!";
 while(<IN>){
   chomp;
   @F = split(/\t/);
   next if $F[2] =~ /transcript/;
-  if ( !exists($genome{$F[0]}) ){
+  if ( !exists($genome->{$F[0]}) ){
     $ns{$F[0]} = 1;
     next;
   }
   @G = split(/\s/,$F[$#F]);
   $id = get_id($_,$f);
-#  $id = $G[3];
-#  $id =~ s/[\";]//g;
   if (!exists($first{$id})){
     if ($flag){
-      $seq = get_sequence(\%exons,\%genome,$region);
+      $seq = get_sequence(\%exons, $genome, $region);
       $seq = revcompl($seq) if $str eq "-";
       print ">".$ID."\n".$seq."\n";
     }
     $j ++;
-    print STDERR $j."\r";
+    print STDERR $j."\r" if $j % 100 ==0; 
     $flag       = 1;
     $first{$id} = 1;
     $ID         = $id;
@@ -42,25 +48,35 @@ while(<IN>){
   }
   $exons{$F[3]} = $F[4];
 }
-$seq = get_sequence(\%exons,\%genome,$region);
+print STDERR "\ndone\n";
+
+### also finish the very last sequence:
+$seq = get_sequence(\%exons,$genome,$region);
 $seq = revcompl($seq) if $str eq "-";
-print ">".$id."\n".$seq."\n" if exists($genome{$region});
+print ">".$id."\n".$seq."\n" if exists($genome->{$region});
 close(IN);
 
 foreach (sort keys %ns ){
   print STDERR $_."\n";
 }
 
+print STDERR "done\n";
+exit 0;
+
+### ------------------------------------------------------------------------
+
+
 sub get_sequence {
-  $qhash = shift;
-  $rhash = shift;
-  $key   = shift;
+  $qhash = shift; # exons
+  $rhash = shift; # genome
+  $key   = shift; # region
   $flag  = 1;
+  my $seq="";
   foreach $k (sort {$a<=>$b} keys %$qhash){
     if ($flag){
-      $seq = substr($$rhash{$key}, $k-1, $$qhash{$k} - $k + 1);
+      $seq = substr($rhash->{$key}, $k-1, $qhash->{$k} - $k + 1);
     }else{
-      $seq = $seq.substr($$rhash{$key}, $k-1, $$qhash{$k} - $k + 1);
+      $seq = $seq.substr($rhash->{$key}, $k-1, $qhash->{$k} - $k + 1);
     }
     $flag = 0;
   }
