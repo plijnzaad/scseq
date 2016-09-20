@@ -29,9 +29,9 @@ while(<IN>){
   next if /^\#/;
   ($dum,$name,$chr,$str,$start,$end,$cdsStart,$cdsEnd,$dum,$exstart,$exend,$dum,$name2)=split(/\t/);
   if($start <= 0 ) {
-    print STDERR "transcript start is 0, adjusted to 1. Line $.: $_\n";
+    print STDERR "transcript start <= 0, adjusted to 1. Line $.: $_\n";
     $start=1;
-    $exstart =~ 's/0,/1,/';
+    $exstart =~ s/0,/1,/;
   }
   @S = split(/\,/,$exstart);            # exon starts
   @E = split(/\,/,$exend);
