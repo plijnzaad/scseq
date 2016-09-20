@@ -5,7 +5,7 @@
 
 use tools;
 
-if (scalar @ARGV == 1) {
+if (scalar @ARGV == 1 || !$in || !$cl || !$out) {
     die "usage: -in=INPUT.gtf -cl=clusters_list.tsv -out=OUTPUT.gtf\n" if ($ARGV[0] eq "help");
 }
 
@@ -25,7 +25,7 @@ while(<IN>){
 }
 close(IN);
 
-die "$cl: no clusters read " unless int(%clust);
+die "$cl: no clusters read " unless int(keys %clust);
 
 open(IN,"<",$in) || die "$in: $!";
 while(<IN>){
