@@ -28,7 +28,12 @@ while(<IN>){
   chomp;
   next if /^\#/;
   ($dum,$name,$chr,$str,$start,$end,$cdsStart,$cdsEnd,$dum,$exstart,$exend,$dum,$name2)=split(/\t/);
-  @S = split(/\,/,$exstart);
+  if($start <= 0 ) {
+    print STDERR "transcript start is 0, adjusted to 1. Line $.: $_\n";
+    $start=1;
+    $exstart =~ 's/0,/1,/';
+  }
+  @S = split(/\,/,$exstart);            # exon starts
   @E = split(/\,/,$exend);
   $sid = $name2."__".$chr;              # gene_id
   $t   = $name."__".$chr;               # refseqid, i.e. transcript name
