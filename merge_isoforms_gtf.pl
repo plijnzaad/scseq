@@ -1,9 +1,9 @@
 #!/usr/bin/perl -s -w
+## This script merges all isoforms into one (often non-existing)
+## transcript: all exons are strung together into one gene model (which
+## may have non-existing exon juctions)
 
 use tools;
-
-## This script merges all isoforms into one (often non-existing) transcript: all exons are strung together into one
-## gene model (which may have non-existing exon juctions)
 
 if (scalar @ARGV == 1) {
     die "usage: -in=INPUT.gtf -cl=clusters_list.tsv -out=OUTPUT.gtf\n" if ($ARGV[0] eq "help");
