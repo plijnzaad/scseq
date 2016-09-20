@@ -123,28 +123,33 @@ sub print_hash {
     }
     return;
 }
+
 sub fasta2hash {
-    # receives a pointer to a hash as argument                                                                                                                                            
-    $hash = $_[0];
-    $file = $_[1];
-    open(IN,"<",$file);
-    $j = 0;
-    print STDERR $file."\n";
-    while(<IN>){
-        chomp;
-	next if $_ eq "";
-	$j ++;
-        print STDERR $j."\r";
-        if (/^\>/){
-            $key = $_;
-            $key =~ s/^\>//g;
-            $$hash{$key} = "";
-        }else{
-            $$hash{$key} = $$hash{$key}.$_;
-        }
+  ## reads fasta into a hash and return it. Hash is indexed by sequence name
+  $file = $_[0];
+  $hash = {};
+  open(IN,"<",$file) || die "$file: $!";
+  $j = 0;
+##  open(TTY, ">>/dev/null") or die "/dev/tty: $!";
+  print STDERR "reading $file ...\n";
+  while(<IN>){
+    chomp;
+    next if $_ eq "";
+    $j ++;
+    print STDERR $j."\r" if $j % 10000 == 0;
+    if (/^\>/){
+      $key = $_;
+      $key =~ s/^\>//g;
+      $hash->{$key} = "";
+      print STDERR "\nFound $key ...\n";
+    }else{
+      $hash->{$key} = $hash->{$key}.$_;
     }
-    close(IN);
-}
+  }
+  close(IN);
+  print STDERR "done reading $file\n";
+  $hash;
+}                                       # fasta2hash
 
 sub fasta2hash_old {
     # receives a pointer to a hash as argument
