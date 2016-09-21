@@ -16,6 +16,10 @@ use tools;
 ### See also genePredToGtf and 
 ### http://genomewiki.ucsc.edu/index.php/Genes_in_gtf_or_gff_format
 
+warn "### NOTE: the GRCh38 RefSeq table has duplicate gene names for e.g. RNU1-1; basically this table is corrupt, 
+### leading to some huge transcripts (with exons from both strands !?!?) ... UCSC has been notified
+" ;
+
 if (@ARGV == 0 && (!$in || !$out || !$m)) {
   die "usage: -in=INPUT.ucsc_format -out=OUTPUT.gtf -m=gene2isoforms.tsv -utr=0,3,5\n";
 }
