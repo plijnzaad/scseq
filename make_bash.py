@@ -6,6 +6,12 @@
 ### For usage run -> python make_bash.py -help 
 ### Thom de Hoog, van Oudenaarden group, 02-03-2015
 
+### NOTE: all this script does is write another script, which should then be executed.
+### Optimization: it concatenates the lanes, but there's no need to, align in parallel and mege afterwards.
+### See also Abel Vertesy's MapAndGo thing, at
+### https://github.com/vertesy/TheCorvinas/blob/master/Python/MapAndGo 
+
+
 import glob
 import sys
 import os
