@@ -16,8 +16,8 @@ use tools;
 ### See also genePredToGtf and 
 ### http://genomewiki.ucsc.edu/index.php/Genes_in_gtf_or_gff_format
 
-if (scalar @ARGV == 1) {
-    die "usage: -in=INPUT.ucsc_format -out=OUTPUT.gtf -m=gene2isoforms.tsv -utr=0,3,5\n" if ($ARGV[0] eq "help");
+if (@ARGV == 0) {
+  die "usage: -in=INPUT.ucsc_format -out=OUTPUT.gtf -m=gene2isoforms.tsv -utr=0,3,5\n";
 }
 
 $utr = 0 if !$utr;
