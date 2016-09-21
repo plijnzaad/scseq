@@ -5,8 +5,8 @@
 
 use tools;
 
-if (scalar @ARGV == 1 || !$in || !$cl || !$out) {
-    die "usage: -in=INPUT.gtf -cl=clusters_list.tsv -out=OUTPUT.gtf\n" if ($ARGV[0] eq "help");
+if (!@ARGV && (!$in || !$cl || !$out)) {
+  die "usage: -in=INPUT.gtf -cl=clusters_list.tsv -out=OUTPUT.gtf\n";
 }
 
 ## clusters_list.tsv comes from the -m option of ucsc2gtf.pl. 
