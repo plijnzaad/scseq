@@ -1,7 +1,7 @@
 #!/usr/bin/perl -s -w
 
-use lib '/hpc/hub_oudenaarden/bin/';
-#use lib '/Users/d.grun/data/bin/';
+# use lib '/hpc/hub_oudenaarden/bin/';
+# use lib '/Users/d.grun/data/bin/';
 use tools;
 
 if (scalar @ARGV == 1)
