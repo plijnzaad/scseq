@@ -6,7 +6,16 @@ use tools;
 
 if (scalar @ARGV == 1)
 {
-    die "usage: -in=INPUTFILE.sam -bc=cel-seq_barcodes.csv  -s_flag= 1 or 0 ( if 1 then produce separate files for sense and antisense strand ) -u= 1 or 0 ( if 1 then only map reads that map to only one strand, optional) -uniq=1 (optional, only unique reads) -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed ) -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first) -rb= 0 or 1 (optional (CEL-seq), use random barcodes) -rb_len= length of random barcode (default = 4)\n" if $ARGV[0] eq "help";
+    die "usage:    \
+      -in=INPUTFILE.sam    \
+      -bc=cel-seq_barcodes.csv     \
+      -s_flag= 1 or 0 ( if 1 then produce separate files for sense and antisense strand )    \
+      -u= 1 or 0 ( if 1 then only map reads that map to only one strand, optional)    \
+      -uniq=1 (optional, only unique reads)    \
+      -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed )    \
+      -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first)    \
+      -rb= 0 or 1 (optional (CEL-seq), use random barcodes)    \
+      -rb_len= length of random barcode (default = 4)\n" if $ARGV[0] eq "help";  
 }
 
 $u = 0 if !$u;
