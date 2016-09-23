@@ -22,7 +22,7 @@ if (!($r && $f1 && $out && $t)){
                  -uniq=1 (optional, keep only uniquely mapped reads. Passed to process_sam_cel_seq.pl )    \
                  -test=1    \
                  -npr= 0 or 1 (1: do not process_sam.pl 2: run only do not process_sam.pl )    \
-                 -nsam= 0 or 1 (1: do not produce new sam file (WTF?). Used to call bwa samse/sampe)    \
+                 -nsam= 0 or 1 (1: do not produce new sam file. Used to call bwa samse/sampe)    \
                  -cel=0 or 1 (1: process CEL-seq *.sam output. Wether to call process_sam_cel_seq.pl )    \
                  -bar=cel-seq_barcodes.csv    \
                  -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed; passed to process_sam_cel_seq.pl )    \
