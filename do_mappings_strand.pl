@@ -2,8 +2,36 @@
 use tools;
 
 if (!($r && $f1 && $out && $t)){
-    die "usage: -r=REFERENCE -f1=READ1 -f2=READ2(optional) -out=OUTPUT_PREFIX -outdir=OUTPUT_DIRECTORY (optional) -t=THREADS -ind=is or bwtsw (default: is (<2GB reference) -q=PHRED_QUALITY_FOR_TRIMMING (0..62) -aln_n=edit distance -aln_k=edit distance in seed -l=SEED_LENGTH -BL=barcode length left read (bwa aln option -B, default is 0) -BR=barcode length right read (bwa aln option -B, default is 0) -i= 1 or 0 (1 if indexing is required) -gff=DATA.gff (optional, produces wig files) -s_flag=1 (optional: strand specific mapping) -u=1 (optional: only reads mapping to one strand) -uniq=1 (optional, keep only uniquely mapped reads) -test=1 -npr= 0 or 1 (1: do not process_sam.pl 2: run only do not process_sam.pl ) -nsam= 0 or 1 (1: do not produce new sam file) -cel=0 or 1 (1: process CEL-seq *.sam output) -bar=cel-seq_barcodes.csv -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed ) -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first) -rb= 0 or 1 (optional (CEL-seq), use random barcodes) -rb_len= length of random barcode (default = 4) -dprm= 0 or 1 (for CEL-seq: 1: reomve pcr duplicates)\n";
+    die "usage:  -r=REFERENCE     \
+                 -f1=READ1    \
+                 -f2=READ2 (optional)    \
+                 -out=OUTPUT_PREFIX    \
+                 -outdir=OUTPUT_DIRECTORY (optional)    \
+                 -t=THREADS  (0)  \
+                 -ind=is or bwtsw (default: is (<2GB reference)    \
+                 -q=PHRED_QUALITY_FOR_TRIMMING (0..62, default 0)   \
+                 -aln_n=edit distance  (bwa aln option -n, default 0.04)  \
+                 -aln_k=edit distance in seed  (bwa aln option -k, default 2)   \
+                 -l=SEED_LENGTH  (bwa -l option)  \
+                 -BL=barcode length left read (bwa aln option -B, default is 0)    \
+                 -BR=barcode length right read (bwa aln option -B, default 0)   \
+                 -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
+                 -gff=DATA.gff (optional, produces wig ?? files. Passed process_sam_cel_seq.pl  )    \
+                 -s_flag=1 (optional: strand specific mapping. Passed to process_sam_cel_seq.pl)    \
+                 -u=1 (optional: only reads mapping to one strand. Passed to process_sam_cel_seq.pl )    \
+                 -uniq=1 (optional, keep only uniquely mapped reads. Passed to process_sam_cel_seq.pl )    \
+                 -test=1    \
+                 -npr= 0 or 1 (1: do not process_sam.pl 2: run only do not process_sam.pl )    \
+                 -nsam= 0 or 1 (1: do not produce new sam file (WTF?). Used to call bwa samse/sampe)    \
+                 -cel=0 or 1 (1: process CEL-seq *.sam output. Wether to call process_sam_cel_seq.pl )    \
+                 -bar=cel-seq_barcodes.csv    \
+                 -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed; passed to process_sam_cel_seq.pl )    \
+                 -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first)    \
+                 -rb= 0 or 1 (optional (CEL-seq), use random barcodes. Passed to process_sam_cel_seq.pl)    \
+                 -rb_len= length of random barcode (default = 4), passed to process_sam_cel_seq.pl    \
+                 -dprm= 0 or 1 (for CEL-seq: 1: reomve pcr duplicates, passed to process_sam_cel_seq.pl)\n";
 }
+
 # hard coded:
 $n = 100; # maximal number of unpaired reads to output in XA tag
 $N = 100; # maximal number of paired reads to output in XA tag
@@ -31,7 +59,7 @@ if ($outdir){
     $out = $outdir."/".$out;
 }
 $pflag = 0;
-$pflag = 1 if ($f1 && $f2);
+$pflag = 1 if ($f1 && $f2);             # paired
 
 
 if ($i){
