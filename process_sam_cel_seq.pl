@@ -155,10 +155,10 @@ while(<IN>){
 	@flag   = split(//,reverse(dec2bin($FLAG[$i])));
 	if ( $i == 0 ){
 	  $dpflag = 0;
-	  $BAR = substr($SEQ[$i],0,$bl) if  $i == 0  && !$flag[4];
+	  $BAR = substr($SEQ[$i],0,$bl) if  $i == 0  && !$flag[4]; # $bl is barcode length
 	  $BAR = substr(revcompl($SEQ[$i]),0,$bl) if  $i == 0  &&  $flag[4];
 	  if ( $rb ){
-	    $RBAR = substr($SEQ[$i],$bl,$rb_len) if  $i == 0  && !$flag[4];
+	    $RBAR = substr($SEQ[$i],$bl,$rb_len) if  $i == 0  && !$flag[4]; # used for naming the cell
 	    $RBAR = substr(revcompl($SEQ[$i]),$bl,$rb_len) if  $i == 0  &&  $flag[4];
 	  }
 	  $dpflag = 1 if exists($dpseen{$BAR}{$RNAME[1]}{$POS[1]});
@@ -179,8 +179,6 @@ while(<IN>){
 	    }
 	    next if $u_flag;
 	  }
-
-
 
 	  if ($flag[4]){$str = "-";}else{$str = "+";}
 	  
@@ -369,11 +367,11 @@ sub update_t {
       foreach $rname (keys %{$HITS{$s}}){
 	#print STDERR join("\t",($s,$rname,$HITS{$s}{$rname},$h_nb))."\n";
 	if ($rb){
-	  $$t{$s}{$rname."\t".$RBAR}  = 0 if !exists($$t{$s}{$rname."\t".$RBAR});
-	  $$tc{$s}{$rname."\t".$RBAR} = 0 if !exists($$tc{$s}{$rname."\t".$RBAR});
-	  $$t{$s}{$rname."\t".$RBAR}  += $HITS{$s}{$rname}/$h_nb;
-	  $$tc{$s}{$rname."\t".$RBAR} += $HITS{$s}{$rname}/$h_nb;
-	  #print STDERR join("\t",($s,$rname,$$t{$s}{$rname."\t".$RBAR}))."\n";
+ 	  $$t{$s}{$rname."\t".$RBAR}  = 0 if !exists($$t{$s}{$rname."\t".$RBAR});
+ 	  $$tc{$s}{$rname."\t".$RBAR} = 0 if !exists($$tc{$s}{$rname."\t".$RBAR});
+ 	  $$t{$s}{$rname."\t".$RBAR}  += $HITS{$s}{$rname}/$h_nb;
+ 	  $$tc{$s}{$rname."\t".$RBAR} += $HITS{$s}{$rname}/$h_nb;
+ 	  #print STDERR join("\t",($s,$rname,$$t{$s}{$rname."\t".$RBAR}))."\n";
 	}else{
 	  $$t{$s}{$rname}  += $HITS{$s}{$rname}/$h_nb;
 	  $$tc{$s}{$rname} += $HITS{$s}{$rname}/$h_nb;				    
