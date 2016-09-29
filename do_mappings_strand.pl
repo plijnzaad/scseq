@@ -28,8 +28,10 @@ if (!($r && $f1 && $out && $t)){
                  -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed; passed to process_sam_cel_seq.pl )    \
                  -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first)    \
                  -rb= 0 or 1 (optional (CEL-seq), use random barcodes. Passed to process_sam_cel_seq.pl)    \
+                 -s_flag= 0 or 1 (separate output for sense and antisense hits, passed to process_sam_cel_seq.pl)  \
                  -rb_len= length of random barcode (default = 4), passed to process_sam_cel_seq.pl    \
-                 -dprm= 0 or 1 (for CEL-seq: 1: reomve pcr duplicates, passed to process_sam_cel_seq.pl)\n";
+                 -dprm= 0 or 1 (for CEL-seq: 1: reomve pcr duplicates, passed to process_sam_cel_seq.pl)
+";
 }
 
 # hard coded:
