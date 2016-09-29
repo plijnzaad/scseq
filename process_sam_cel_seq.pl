@@ -1,11 +1,8 @@
 #!/usr/bin/perl -s -w
 
-# use lib '/hpc/hub_oudenaarden/bin/';
-# use lib '/Users/d.grun/data/bin/';
 use tools;
 
-if (scalar @ARGV == 1)
-{
+if (scalar @ARGV == 1) {
     die "usage:    \
       -in=INPUTFILE.sam    \
       -bc=cel-seq_barcodes.csv     \
