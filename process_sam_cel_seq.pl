@@ -48,16 +48,16 @@ if ($u){
     $sout =~ s/(\.)\w+$/\.sout/;
 }
 
-if ( $s_flag ){
-    $cout_s = $in; # output file for read counts per reference sequence in input file
-    $cout_a = $in; # output file for read counts per reference sequence in input file
-    if ($u){
-	$cout_s =~ s/(\.)\w+$/\.u\.sense\.cout\.csv/;
-	$cout_a =~ s/(\.)\w+$/\.u\.antisense\.cout\.csv/;
-    }else{
-    	$cout_s =~ s/(\.)\w+$/\.sense\.cout\.csv/;
-	$cout_a =~ s/(\.)\w+$/\.antisense\.cout\.csv/;
-    }
+if ( $s_flag ){ # never used
+##     $cout_s = $in; # output file for read counts per reference sequence in input file
+##     $cout_a = $in; # output file for read counts per reference sequence in input file
+##     if ($u){
+## 	$cout_s =~ s/(\.)\w+$/\.u\.sense\.cout\.csv/;
+## 	$cout_a =~ s/(\.)\w+$/\.u\.antisense\.cout\.csv/;
+##     }else{
+##     	$cout_s =~ s/(\.)\w+$/\.sense\.cout\.csv/;
+## 	$cout_a =~ s/(\.)\w+$/\.antisense\.cout\.csv/;
+##     }
 }else{
     $cout   = $in;
     if ($u){
@@ -70,42 +70,44 @@ if ( $s_flag ){
 $bout = $in; # output file for summary stats
 $bout =~ s/(\.)\w+$/\.bout/;
 
+my $bl;                                 # barcode length
+
 
 open(BC,'<',$bc);
 while(<BC>){
   chomp;
   @F=split(/\t/);
-  $bar{$F[1]} = $F[0];
+  $bar{$F[1]} = $F[0];                  # $bar{'GACACTCA'} => 23
   $bl = length($F[1]);
 }
 close(BC);
 
-if ( $anno ne "0" ){
-  open(ANNO,"<",$anno);
-  while(<ANNO>){
-    chomp;
-    @F = split(/\t/);
-    $r = $F[3]."\t".$F[4];
-    #$an{$F[0]}{$F[1]}{($F[2] - 1)} = $r;
-    $an{$F[0]}{$F[1]}{$F[2]} = $r;
-    if ( !$rb ){
-      $t{"+"}{$r} = 0;
-      $t{"-"}{$r} = 0;
-      foreach $k (keys %bar){
-	$tc{$bar{$k}}{"+"}{$r} = 0;
-	$tc{$bar{$k}}{"-"}{$r} = 0;
-      }
-    }
-    $n ++;
-  }
-  close(ANNO);
-}
+## if ( $anno ne "0" ){ # we don't use this
+##   open(ANNO,"<",$anno);
+##   while(<ANNO>){
+##     chomp;
+##     @F = split(/\t/);
+##     $r = $F[3]."\t".$F[4];
+##     #$an{$F[0]}{$F[1]}{($F[2] - 1)} = $r;
+##     $an{$F[0]}{$F[1]}{$F[2]} = $r;
+##     if ( !$rb ){
+##       $t{"+"}{$r} = 0;
+##       $t{"-"}{$r} = 0;
+##       foreach $k (keys %bar){
+## 	$tc{$bar{$k}}{"+"}{$r} = 0;
+## 	$tc{$bar{$k}}{"-"}{$r} = 0;
+##       }
+##     }
+##     $n ++;
+##   }
+##   close(ANNO);
+## }
 
 if ( $rb ){
-  $t{"+"} = ();
-  $t{"-"} = ();
+  $t{"+"} = (); # %t: reads per reference sequence (?)
+  $t{"-"} = (); # %tc: reads per reference sequence + cellcode
   foreach $k (keys %bar){
-    $tc{$bar{$k}}{"+"} = ();
+    $tc{$bar{$k}}{"+"} = ();            # keys of %tc are 1 .. 96
     $tc{$bar{$k}}{"-"} = ();
   }
 }
@@ -114,18 +116,18 @@ open(IN,'<',$in);
 $l_flag = 0;
 while(<IN>){
   if (/^\@/){
-    if (/^\@SQ/ && $anno eq "0" && !$rb){
-      chomp;
-      @r = split(/\t/);
-      $r[1] =~ s/SN://g;
-      $t{"+"}{$r[1]} = 0;
-      $t{"-"}{$r[1]} = 0;
-      foreach $k (keys %bar){
-	$tc{$bar{$k}}{"+"}{$r[1]} = 0;
-	$tc{$bar{$k}}{"-"}{$r[1]} = 0;
-      }
-      $n ++;
-    }
+##     if (/^\@SQ/ && $anno eq "0" && !$rb){ ## anno not used anymore PL
+##       chomp;
+##       @r = split(/\t/);
+##       $r[1] =~ s/SN://g;
+##       $t{"+"}{$r[1]} = 0;
+##       $t{"-"}{$r[1]} = 0;
+##       foreach $k (keys %bar){
+## 	$tc{$bar{$k}}{"+"}{$r[1]} = 0;
+## 	$tc{$bar{$k}}{"-"}{$r[1]} = 0;
+##       }
+##       $n ++;
+##     }
   }else{
     if ($l_flag == 0){
       @l = ($_);
@@ -162,8 +164,8 @@ while(<IN>){
 	  $dpflag = 1 if exists($dpseen{$BAR}{$RNAME[1]}{$POS[1]});
 	  $dpseen{$BAR}{$RNAME[1]}{$POS[1]} = 1;
 
-	  #print STDERR ">".$RNAME[$i]."\n".revcompl(substr($SEQ[$i],$bl+$rb_len,length($SEQ[$i]) - ($bl + $rb_len)))."\n" if  $i == 0  && !$flag[4];
-	  #print STDERR ">".$RNAME[$i]."\n".revcompl(substr(revcompl($SEQ[$i]),$bl+$rb_len,length($SEQ[$i]) - ($bl + $rb_len)))."\n" if  $i == 0  && $flag[4];
+	  ##print STDERR ">".$RNAME[$i]."\n".revcompl(substr($SEQ[$i],$bl+$rb_len,length($SEQ[$i]) - ($bl + $rb_len)))."\n" if  $i == 0  && !$flag[4];
+	  ##print STDERR ">".$RNAME[$i]."\n".revcompl(substr(revcompl($SEQ[$i]),$bl+$rb_len,length($SEQ[$i]) - ($bl + $rb_len)))."\n" if  $i == 0  && $flag[4];
 	}else{
 	  #next if $uniq && $d_flag[$i] == 1;
 	  next if $dprm && $dpflag == 1;
@@ -231,9 +233,9 @@ print SOUT "fraction of reads mapped without valid barcode:\t".($n_bar/$p_r)."\n
 $a_sum = 0;
 $s_sum = 0;
 
-if ($s_flag){
-    open(COUTA,'>',$cout_a) if !$fstr;
-    open(COUTS,'>',$cout_s);
+if ($s_flag){ # never used
+##    open(COUTA,'>',$cout_a) if !$fstr;
+##    open(COUTS,'>',$cout_s);
 }else{
     open(COUT,'>',$cout);
 }
@@ -241,9 +243,9 @@ if ($s_flag){
 $name = "GENEID";
 if ($anno ne "0" ){ $name = "CLASS\t".$name}
 if ( $rb ){ $name = $name."\tRBAR"}
-if ($s_flag){
-  print COUTA join("\t",($name, sort {$a <=> $b} keys %tc))."\n" if !$fstr;
-  print COUTS join("\t",($name, sort {$a <=> $b} keys %tc))."\n";
+if ($s_flag){                           # never used
+##  print COUTA join("\t",($name, sort {$a <=> $b} keys %tc))."\n" if !$fstr;
+##  print COUTS join("\t",($name, sort {$a <=> $b} keys %tc))."\n";
 }else{
   print COUT  join("\t",($name, sort {$a <=> $b} keys %tc))."\n";
 }
@@ -254,21 +256,20 @@ foreach $k (keys %{$t{"-"}}){
   $seen{$k} = 1;
 }
 
-
 foreach $k (keys %seen){
   if ($s_flag){
-    print COUTS $k;
-    print COUTA $k if !$fstr;
-    foreach $id ( sort {$a <=> $b} keys %tc ){
-      $pl = 0;
-      $mi = 0;
-      $pl = $tc{$id}{"+"}{$k} if exists($tc{$id}{"+"}{$k});
-      $mi = $tc{$id}{"-"}{$k} if exists($tc{$id}{"-"}{$k});
-      print COUTS "\t".$pl;
-      print COUTA "\t".$mi if !$fstr;
-    }
-    print COUTS "\n";
-    print COUTA "\n" if !$fstr;
+##     print COUTS $k;
+##     print COUTA $k if !$fstr;
+##     foreach $id ( sort {$a <=> $b} keys %tc ){
+##       $pl = 0;
+##       $mi = 0;
+##       $pl = $tc{$id}{"+"}{$k} if exists($tc{$id}{"+"}{$k});
+##       $mi = $tc{$id}{"-"}{$k} if exists($tc{$id}{"-"}{$k});
+##       print COUTS "\t".$pl;
+##       print COUTA "\t".$mi if !$fstr;
+##     }
+##     print COUTS "\n";
+##     print COUTA "\n" if !$fstr;
   }else{
     print COUT $k;
     foreach $id ( sort {$a <=> $b} keys %tc ){
@@ -305,9 +306,9 @@ if ( $s_sum + $a_sum > 0 ){
 print SOUT "fraction of reads mapped to antisense strand:\t".$fr."\n";
 
 close(SOUT);
-if ($s_flag){
-    close(COUTA) if !$fstr;
-    close(COUTS);
+if ($s_flag){                           # never used
+##    close(COUTA) if !$fstr;
+##    close(COUTS);
 }else{
     close(COUT);
 }
@@ -351,17 +352,18 @@ sub update_t {
     next if $fstr && $xa_st eq "-";
     if ($nm <= $NM){
       if ($anno ne "0"){
-	if ( exists($an{$alt_rname}{$xa_st}{$pos})){
-	  $h_nb ++;
-	  fill_histo(\%{$HITS{$st}},$an{$alt_rname}{$xa_st}{$pos});
-	}
-	#print STDERR join("\t",($alt_rname,$xa_st,$pos,$l[$i],"XA"))."\n" if !exists($an{$alt_rname}{$xa_st}{$pos});
-      }else{
+## 	if ( exists($an{$alt_rname}{$xa_st}{$pos})){
+## 	  $h_nb ++;
+## 	  fill_histo(\%{$HITS{$st}},$an{$alt_rname}{$xa_st}{$pos});
+## 	}
+## 	#print STDERR join("\t",($alt_rname,$xa_st,$pos,$l[$i],"XA"))."\n" if !exists($an{$alt_rname}{$xa_st}{$pos});
+      } else{
 	fill_histo(\%{$HITS{$xa_st}},$alt_rname);
 	$h_nb ++;
       } 
     }
   }
+
   if (!$u || !(exists($HITS{"+"}) && exists($HITS{"-"}))){
     foreach $s (keys %HITS){
       foreach $rname (keys %{$HITS{$s}}){
@@ -379,6 +381,6 @@ sub update_t {
       }
     }
   }
-}
+}                                       # update_t
 
 
