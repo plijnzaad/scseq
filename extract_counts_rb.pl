@@ -1,11 +1,14 @@
 #!/usr/bin/perl -w -s
 
-#use lib "/Users/d.grun/data/bin";
-use lib "/hpc/hub_oudenaarden/bin";
 use tools;
 
-if (scalar @ARGV == 1){
-    die "usage: -bl=4 -in=aggr_counts.csv (comma separated list) -outc=READ_COUNTS.csv -outb=BARCODE_COUNTS.cvs -outt=TRANSCRIPT_COUNTS.csv\n" if $ARGV[0] eq "help";
+if (! ( $in && $outc && $outb && $outt )) { 
+    die "
+Usage: -bl=4  # UMI-length              \
+       -in=aggr_counts.tsv                  \
+       -outc=READ_COUNTS.csv            \
+       -outb=BARCODE_COUNTS.cvs         \
+       -outt=TRANSCRIPT_COUNTS.csv\n";  
 }
 
 $bl = 4 if !$bl;
@@ -39,8 +42,7 @@ foreach $k (@ina){
     }
     for $i (2..$#F){
 	${$rc{$F[0]}}[$i - 2] += $F[$i];
-      ${$bc{$F[0]}}[$i - 2] += min(1,$F[$i]) if $F[$i] > 0 && ! exists($seen{$F[0]}{$F[1]}{$i});
-	#print STDERR $F[0]."\t".$F[1]."\t".${$rc{$F[0]}}[$i - 2]."\t".${$bc{$F[0]}}[$i - 2]."\t".$seen{$F[0]}{$F[1]}."\n" if ${$rc{$F[0]}}[$i - 2] > 0 && ${$bc{$F[0]}}[$i - 2] == 0;
+        ${$bc{$F[0]}}[$i - 2] += min(1,$F[$i]) if $F[$i] > 0 && ! exists($seen{$F[0]}{$F[1]}{$i});
 	$seen{$F[0]}{$F[1]}{$i} = 1 if $F[$i] > 0;   
       }
    
