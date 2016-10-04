@@ -30,7 +30,8 @@ if (!($r && $f1 && $out && $t)){
                  -rb= 0 or 1 (optional (CEL-seq), use random barcodes. Passed to process_sam_cel_seq.pl)    \
                  -s_flag= 0 or 1 (separate output for sense and antisense hits, passed to process_sam_cel_seq.pl)  \
                  -rb_len= length of random barcode (default = 4), passed to process_sam_cel_seq.pl    \
-                 -dprm= 0 or 1 (for CEL-seq: 1: reomve pcr duplicates, passed to process_sam_cel_seq.pl)
+                 -dprm= 0 or 1 (for CEL-seq: 1: remove pcr duplicates, passed to process_sam_cel_seq.pl) \
+                 -skipmap=0 or 1 (skip if mapping was already done)
 ";
 }
 
@@ -51,6 +52,7 @@ $anno = 0 if !$anno;
 $rb = 0 if !$rb;
 $rb_len = 4 if !$rb_len;
 $dprm = 0 if !$dprm;
+$skipmap =0 if !defined($skipmap);
 
 $aln_n = 0.04 if !$aln_n; # edit distance
 $aln_k = 2 if !$aln_k; # edit distance in seed
@@ -81,7 +83,7 @@ for $i (0..$#F){
     $H[$i] =~ s/(\.)\w+$/\.sai/;
 }
 
-if ( $npr != 2 ){
+if ( !$skipmap && ($npr != 2 )) {
     for $i (0..$#G){
 	if ($F[$i] =~ /txt/){
 	    $str = "qseq2fastq.pl -clean=1 -in=".$F[$i]." > ".$G[$i];
@@ -103,8 +105,8 @@ if ( $npr != 2 ){
     }
     print $str."\n";
     (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
-    
-}
+}                                       # npr!=2
+
 if ( $npr == 0 || $npr == 2){
     $s = 1;
     $s = 0 if $pflag;
