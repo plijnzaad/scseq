@@ -31,7 +31,6 @@ if (!($r && $f1 && $out && $t)){
                  -s_flag= 0 or 1 (separate output for sense and antisense hits, passed to process_sam_cel_seq.pl)  \
                  -rb_len= length of random barcode (default = 4), passed to process_sam_cel_seq.pl    \
                  -dprm= 0 or 1 (for CEL-seq: 1: remove pcr duplicates, passed to process_sam_cel_seq.pl) \
-                 -skipmap=0 or 1 (skip if mapping was already done)
 ";
 }
 
@@ -52,7 +51,6 @@ $anno = 0 if !$anno;
 $rb = 0 if !$rb;
 $rb_len = 4 if !$rb_len;
 $dprm = 0 if !$dprm;
-$skipmap =0 if !defined($skipmap);
 
 $aln_n = 0.04 if !$aln_n; # edit distance
 $aln_k = 2 if !$aln_k; # edit distance in seed
@@ -83,7 +81,7 @@ for $i (0..$#F){
     $H[$i] =~ s/(\.)\w+$/\.sai/;
 }
 
-if ( !$skipmap && ($npr != 2 )) {
+if ( ($npr != 2 )) {
     for $i (0..$#G){
 	if ($F[$i] =~ /txt/){
 	    $str = "qseq2fastq.pl -clean=1 -in=".$F[$i]." > ".$G[$i];
@@ -93,7 +91,8 @@ if ( !$skipmap && ($npr != 2 )) {
 	if ( $i == 0 ) { $B = $BL; } else { $B = $BR; }
 	$str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
 	print $str."\n";
-	(system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
+	# (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
+	print "not running $str now ...";
     }
     
     if ( $nsam == 0 ){
