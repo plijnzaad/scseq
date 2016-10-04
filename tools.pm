@@ -424,18 +424,30 @@ sub makedir {
     }
 }
 
-
 sub execute { 
-  my ($cmd)=@_;
+  ## call as execute(cmd=>$str) or as
+  ## execute(cmd=>$str, merge=>1). In latter case, stdout and stderr
+  ##  are merged when reporting errors
+  my $args = ref $_[0] eq 'HASH' ? shift : {@_};
+  my($cmd, $merge)=map{$args->{$_} } qw(cmd merge);
+  my ($msgheader)="Output";
 
-  my $out=`$cmd 2>&1`;
-
-  if ($?) {
-    print STDERR "Command line '$cmd' exited with non-zero exit-status $?\n. Output was\n$out\n";
+  if($merge) {
+    $merge= '2>&1';
+    $msgheader="Combined stdout and stderr";
+  } else {
+    $merge='';
   }
 
-  if ($out=~ /\S/ ) { 
-    print STDERR "Command line '$cmd' had following output:\n\n$out\n";
+  my $out=`$args->{cmd} $merge `;
+
+  if ($?) {
+    print STDERR "Command line '$cmd' exited with non-zero exit-status $?\n. $msgheader was\n$out\n";
+  } else {
+    
+    if ($out=~ /\S/ ) { 
+      print STDERR "Command line '$cmd' had following output:\n\n$out\n";
+    }
   }
 }
 

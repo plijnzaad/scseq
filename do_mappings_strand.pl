@@ -68,7 +68,7 @@ $pflag = 1 if ($f1 && $f2);             # paired
 if ($i){
     $str = "bwa index -a ".$ind." ".$r;
     print $str."\n";
-    execute($str) if ($test == 0);
+    execute(cmd=>$str, merge=>1) if ($test == 0);
 }
 
 @F = ($f1);
@@ -87,12 +87,12 @@ if ( ($npr != 2 )) {
 	if ($F[$i] =~ /txt/){
 	    $str = "qseq2fastq.pl -clean=1 -in=".$F[$i]." > ".$G[$i];
 	    print $str."\n";
-	    execute($str) if ($test == 0);
+	    execute(cmd=>$str) if ($test == 0);
 	}
 	if ( $i == 0 ) { $B = $BL; } else { $B = $BR; }
 	$str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
 	print $str."\n";
-	execute($str) if ($test == 0);
+	execute(cmd=>$str) if ($test == 0);
     }
     
     if ( $nsam == 0 ){
@@ -103,7 +103,7 @@ if ( ($npr != 2 )) {
 	}
     }
     print $str."\n";
-    execute($str) if ($test == 0);
+    execute(cmd=>$str) if ($test == 0);
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
@@ -134,5 +134,5 @@ if ( $npr == 0 || $npr == 2){
 	$str = $str." -uniq=".$uniq;
     }
     print $str."\n";
-    execute($str) if ($test == 0);
+    execute(cmd=>$str, merge=>1) if ($test == 0);
 }                                       # if ( $npr == 0 || $npr == 2)
