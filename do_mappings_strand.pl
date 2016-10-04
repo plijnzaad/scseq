@@ -21,9 +21,9 @@ if (!($r && $f1 && $out && $t)){
                  -u=1 (optional: only reads mapping to one strand. Passed to process_sam_cel_seq.pl )    \
                  -uniq=1 (optional, keep only uniquely mapped reads. Passed to process_sam_cel_seq.pl )    \
                  -test=1    \
-                 -npr= 0 or 1 (1: do not process_sam.pl 2: run only do not process_sam.pl )    \
-                 -nsam= 0 or 1 (1: do not produce new sam file. Used to call bwa samse/sampe)    \
-                 -cel=0 or 1 (1: process CEL-seq *.sam output. Wether to call process_sam_cel_seq.pl )    \
+                 -npr=0,1,2: 0: map and process; 1: only map ; 2: only process
+                 -nsam= 0 or 1 (1: do *not* produce new sam file (calls bwa samse/sampe)    \
+                 -cel=0 or 1 (1: call process_sam_cel_seq.pl; 0: call process_sam_strand.pl (obsolete) \
                  -bar=cel-seq_barcodes.csv    \
                  -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed; passed to process_sam_cel_seq.pl )    \
                  -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first)    \
@@ -110,8 +110,7 @@ if ( !$skipmap && ($npr != 2 )) {
 if ( $npr == 0 || $npr == 2){
     $s = 1;
     $s = 0 if $pflag;
-    $str = "process_sam_strand.pl -in=".$out.".sam -s=".$s;
-    if ( $cel ){
+    if ( $cel ) {
       $str = "process_sam_cel_seq.pl -in=".$out.".sam -bc=".$bar." -anno=".$anno." -rb=".$rb." -rb_len=".$rb_len;
       if ( $fstr ){
 	$str = $str." -fstr=".$fstr;
@@ -119,6 +118,9 @@ if ( $npr == 0 || $npr == 2){
       if ( $dprm ){
 	$str = $str." -dprm=".$dprm;
       }
+    } else { 
+      $str = "process_sam_strand.pl -in=".$out.".sam -s=".$s;
+      die "about to run '$str' but we don't have it (obsolete?)";
     }
     if ($gff){
 	$str = $str." -gff=".$gff;
