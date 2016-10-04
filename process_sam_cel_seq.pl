@@ -72,8 +72,7 @@ $bout =~ s/(\.)\w+$/\.bout/;
 
 my $bl;                                 # barcode length
 
-
-open(BC,'<',$bc);
+open(BC,'<',$bc) || die "$bc: $!";
 while(<BC>){
   chomp;
   @F=split(/\t/);
@@ -112,7 +111,7 @@ if ( $rb ){
   }
 }
 
-open(IN,'<',$in);
+open(IN,'<',$in) || die "$in: $!";
 $l_flag = 0;
 while(<IN>){
   if (/^\@/){
@@ -209,7 +208,8 @@ while(<IN>){
   }
 }
 close(IN);
-open(BOUT,'>',$bout);
+
+open(BOUT,'>',$bout) || die "$bout: $!";
 foreach (keys %bcount){
   print BOUT $_."\t".$bcount{$_};
   print BOUT "\t".$bar{$_}."\n" if exists($bar{$_});
@@ -217,7 +217,7 @@ foreach (keys %bcount){
 }
 close(BOUT);
 
-open(SOUT,'>',$sout);
+open(SOUT,'>',$sout) || die "$sout: $!";
 
 print SOUT "number of reference sequences:\t".$n."\n";
 print SOUT "number of reads:\t".$p_r ."\n";
@@ -235,7 +235,7 @@ if ($s_flag){ # never used
 ##    open(COUTA,'>',$cout_a) if !$fstr;
 ##    open(COUTS,'>',$cout_s);
 }else{
-    open(COUT,'>',$cout);
+  open(COUT,'>',$cout) || die "$cout: $!";
 }
 
 $name = "GENEID";
