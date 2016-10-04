@@ -31,6 +31,7 @@ if (!($r && $f1 && $out && $t)){
                  -s_flag= 0 or 1 (separate output for sense and antisense hits, passed to process_sam_cel_seq.pl)  \
                  -rb_len= length of random barcode (default = 4), passed to process_sam_cel_seq.pl    \
                  -dprm= 0 or 1 (for CEL-seq: 1: remove pcr duplicates, passed to process_sam_cel_seq.pl) \
+                  -test=0 or 1 (latter runs in test mode, doesn't call external programs)
 ";
 }
 
@@ -67,7 +68,7 @@ $pflag = 1 if ($f1 && $f2);             # paired
 if ($i){
     $str = "bwa index -a ".$ind." ".$r;
     print $str."\n";
-    (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
+    execute($str) if ($test == 0);
 }
 
 @F = ($f1);
@@ -86,13 +87,12 @@ if ( ($npr != 2 )) {
 	if ($F[$i] =~ /txt/){
 	    $str = "qseq2fastq.pl -clean=1 -in=".$F[$i]." > ".$G[$i];
 	    print $str."\n";
-	    (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
+	    execute($str) if ($test == 0);
 	}
 	if ( $i == 0 ) { $B = $BL; } else { $B = $BR; }
 	$str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
 	print $str."\n";
-	# (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
-	print "not running $str now ...";
+	execute($str) if ($test == 0);
     }
     
     if ( $nsam == 0 ){
@@ -103,7 +103,7 @@ if ( ($npr != 2 )) {
 	}
     }
     print $str."\n";
-    (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
+    execute($str) if ($test == 0);
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
@@ -134,5 +134,5 @@ if ( $npr == 0 || $npr == 2){
 	$str = $str." -uniq=".$uniq;
     }
     print $str."\n";
-    (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
-}
+    execute($str) if ($test == 0);
+}                                       # if ( $npr == 0 || $npr == 2)

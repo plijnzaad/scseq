@@ -424,6 +424,22 @@ sub makedir {
     }
 }
 
+
+sub execute { 
+  my ($cmd)=@_;
+
+  my $out=`$cmd 2>&1`;
+
+  if ($?) {
+    print STDERR "Command line '$cmd' exited with non-zero exit-status $?\n. Output was\n$out\n";
+  }
+
+  if ($out=~ /\S/ ) { 
+    print STDERR "Command line '$cmd' had following output:\n\n$out\n";
+  }
+}
+
+
 1;
 
 
