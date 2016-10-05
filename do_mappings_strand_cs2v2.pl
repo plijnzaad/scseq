@@ -1,6 +1,8 @@
 #!/usr/bin/perl -w -s
 use tools;
 
+$LIST_SEPARATOR=" ";                    # for interpolating arrays inside strings (default anyway)
+
 if (!($r && $f1 && $out && $t)){
     die "usage:  -r=REFERENCE     \
                  -f1=READ1    \
@@ -122,7 +124,7 @@ if ( $npr != 2 ){
         if ($pflag && $cel384 == 0){
             $str = "bwa sampe -n $n -N $N $r @H @G > $out.sam";
         }elsif ($pflag && $cel384 == 1){
-            $str = "bwa samse -n $n $r @H[1] @K[1] > $out.sam";
+            $str = "bwa samse -n $n $r $H[1] $K[1] > $out.sam";
         }else{
             $str = "bwa samse -n $n $r @H @G > $out.sam";
         }
