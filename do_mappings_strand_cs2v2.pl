@@ -151,7 +151,7 @@ if ( $npr == 0 || $npr == 2){
       $str = "process_sam_cel384v2.pl -sam=$out.sam -barfile=$bar -rb_len=$rb_len";
     }
     if ($gff){
-	$str .= "-gff=.$gff";
+	$str .= "-gff=$gff";
     }
     if ($s_flag){
       $str .= " -s_flag=$s_flag";
