@@ -67,7 +67,7 @@ $pflag = 1 if ($f1 && $f2);             # paired
 die "reference genome $r not found" unless -f $r;
 
 if ($i){
-    $str = "bwa index -a ".$ind." ".$r;
+    $str = "bwa index -a $ind $r";
     print $str."\n";
     execute(cmd=>$str, merge=>1) if ($test == 0);
 }
