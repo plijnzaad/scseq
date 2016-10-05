@@ -97,9 +97,9 @@ $K[1] =~ s/(\.)\w+$/\_cbc.fastq/;
 if ( $npr != 2 ){
     for $i (0..$#G){
 		if ($F[$i] =~ /txt/){
-	    	$str = "qseq2fastq.pl -clean=1 -in=".$F[$i]." > ".$G[$i];
-	    	print $str."\n";
-                execute(cmd=>$str) if $test==0;
+                  $str = "qseq2fastq.pl -clean=1 -in=$F[$i]>$G[$i]";
+                  print $str."\n";
+                  execute(cmd=>$str) if $test==0;
 		}
  		if ( $i == 0 ) {
             $B = $BL;
@@ -107,24 +107,24 @@ if ( $npr != 2 ){
             $B = $BR;
         }
         if ( $cel384 == 0){
-            $str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
+            $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $G[$i] > $H[$i]";
             print $str."\n";
             execute(cmd=>$str, merge=>0) if ($test == 0);
         }
         if ( $cel384 == 1 && $i == 1){
-            $str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$K[$i]." > ".$H[$i];
-            print $str."\n";
-            execute(cmd=>$str, merge=>0) if ($test == 0);
+          $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $K[$i] > $H[$i]";
+          print $str."\n";
+          execute(cmd=>$str, merge=>0) if ($test == 0);
         }
     }
     
     if ( $nsam == 0 ){
         if ($pflag && $cel384 == 0){
-            $str = "bwa sampe -n ".$n." -N ".$N." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+            $str = "bwa sampe -n $n -N $N $r @H @G > $out.sam";
         }elsif ($pflag && $cel384 == 1){
-            $str = "bwa samse -n ".$n." ".$r." ".join(" ",(@H[1], @K[1]))." > ".$out.".sam";
+            $str = "bwa samse -n $n $r @H[1] @K[1] > $out.sam";
         }else{
-            $str = "bwa samse -n ".$n." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+            $str = "bwa samse -n $n $r @H @G > $out.sam";
         }
     }
     print $str."\n";
@@ -134,33 +134,33 @@ if ( $npr != 2 ){
 if ( $npr == 0 || $npr == 2){
     $s = 1;
     $s = 0 if $pflag;
-    $str = "process_sam_strand.pl -in=".$out.".sam -s=".$s;
+    $str = "process_sam_strand.pl -in=$out.sam -s=$s";
     if ( $cel ){
-      $str = "process_sam_cel_seq.pl -in=".$out.".sam -bc=".$bar." -anno=".$anno." -rb=".$rb." -rb_len=".$rb_len;
+      $str = "process_sam_cel_seq.pl -in=$out.sam -bc=$bar -anno=$anno -rb=$rb -rb_len=$rb_len";
       if ( $fstr ){
-	$str = $str." -fstr=".$fstr;
+	$str .= " -fstr=$fstr";
       }
       if ( $dprm ){
-	$str = $str." -dprm=".$dprm;
+	$str .= " -dprm=$dprm";
       }
     }
     if ( $STRT ){
-      $str = "process_sam_STRT.pl -sam=".$out.".sam -barfile=".$bar." -BCset=".$BCset." -rb_len=".$rb_len." -se=".$s;
+      $str = "process_sam_STRT.pl -sam=$out.sam -barfile=$bar -BCset=$BCset -rb_len=$rb_len -se=$s";
     }
     if ( $cel384 ){
-      $str = "process_sam_cel384v2.pl -sam=".$out.".sam -barfile=".$bar." -rb_len=".$rb_len;
+      $str = "process_sam_cel384v2.pl -sam=$out.sam -barfile=$bar -rb_len=$rb_len";
     }
     if ($gff){
-	$str = $str." -gff=".$gff;
+	$str .= "-gff=.$gff";
     }
     if ($s_flag){
-	$str = $str." -s_flag=".$s_flag;
+      $str .= " -s_flag=$s_flag";
     }
     if ($u){
-	$str = $str." -u=".$u;
+	$str .= " -u=$u";
     }
     if ($uniq){
-	$str = $str." -uniq=".$uniq;
+	$str .= " -uniq=$uniq";
     }
     print $str."\n";
     execute(cmd=>$str, merge=>1) if ($test == 0);
