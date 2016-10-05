@@ -16,7 +16,7 @@ $bn = 4 ** $bl;
 $flag = 0;
 @ina = split(/\,/,$in);
 foreach $k (@ina){
-  open(IN,"<",$k);
+  open(IN,"<",$k) || die "$k: $!";
   while(<IN>){
     chomp;
     if ( $_ =~ /GENEID/ ){
@@ -50,10 +50,9 @@ foreach $k (@ina){
   close(IN);
 }
 
-
-open(OUTC,">",$outc);
-open(OUTB,">",$outb);
-open(OUTT,">",$outt);
+open(OUTC,">",$outc) || die "$outc:$!";
+open(OUTB,">",$outb) || die "$outb:$!";;
+open(OUTT,">",$outt) || die "$outt:$!";;
 if ( $flag ){
   print OUTC join("\t",(@title[0..1],@title[3..$#title]))."\n";
   print OUTB join("\t",(@title[0..1],@title[3..$#title]))."\n";
