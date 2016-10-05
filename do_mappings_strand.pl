@@ -1,6 +1,8 @@
 #!/usr/bin/perl -w -s
 use tools;
 
+$LIST_SEPARATOR=" ";                    # for interpolating arrays inside strings (default anyway)
+
 if (!($r && $f1 && $out && $t)){
     die "usage:  -r=REFERENCE     \
                  -f1=READ1    \
@@ -16,7 +18,7 @@ if (!($r && $f1 && $out && $t)){
                  -BL=barcode length left read (bwa aln option -B, default is 0)    \
                  -BR=barcode length right read (bwa aln option -B, default 0)   \
                  -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
-                 -gff=DATA.gff (optional, produces wig ?? files. Passed process_sam_cel_seq.pl  )    \
+                 -gff=DATA.gff (optional, produces wig ?? files. Passed to process_sam_cel_seq.pl  )    \
                  -s_flag=1 (optional: strand specific mapping. Passed to process_sam_cel_seq.pl)    \
                  -u=1 (optional: only reads mapping to one strand. Passed to process_sam_cel_seq.pl )    \
                  -uniq=1 (optional, keep only uniquely mapped reads. Passed to process_sam_cel_seq.pl )    \
@@ -86,21 +88,21 @@ for $i (0..$#F){
 if ( ($npr != 2 )) {
     for $i (0..$#G){
 	if ($F[$i] =~ /txt/){
-	    $str = "qseq2fastq.pl -clean=1 -in=".$F[$i]." > ".$G[$i];
+	    $str = "qseq2fastq.pl -clean=1 -in=$F[$i] > $G[$i]";
 	    print $str."\n";
 	    execute(cmd=>$str) if ($test == 0);
 	}
 	if ( $i == 0 ) { $B = $BL; } else { $B = $BR; }
-	$str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
+	$str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $G[$i] > $H[$i]";
 	print $str."\n";
 	execute(cmd=>$str) if ($test == 0);
     }
     
     if ( $nsam == 0 ){
 	if ($pflag){
-	    $str = "bwa sampe -n ".$n." -N ".$N." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+	    $str = "bwa sampe -n $n -N $N $r @H @G > $out.sam";
 	}else{
-	    $str = "bwa samse -n ".$n." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+	    $str = "bwa samse -n $n $r @H @G > $out.sam";
 	}
     }
     print $str."\n";
@@ -111,28 +113,28 @@ if ( $npr == 0 || $npr == 2){
     $s = 1;
     $s = 0 if $pflag;
     if ( $cel ) {
-      $str = "process_sam_cel_seq.pl -in=".$out.".sam -bc=".$bar." -anno=".$anno." -rb=".$rb." -rb_len=".$rb_len;
+      $str = "process_sam_cel_seq.pl -in=$out.sam -bc=$bar -anno=$anno -rb=$rb -rb_len=$rb_len";
       if ( $fstr ){
-	$str = $str." -fstr=".$fstr;
+	$str .= "-fstr=$fstr";
       }
       if ( $dprm ){
-	$str = $str." -dprm=".$dprm;
+	$str .= "$str -dprm=$dprm";
       }
     } else { 
-      $str = "process_sam_strand.pl -in=".$out.".sam -s=".$s;
+      $str = "process_sam_strand.pl -in=$out.sam -s=$s";
       die "about to run '$str' but we don't have it (obsolete?)";
     }
     if ($gff){
-	$str = $str." -gff=".$gff;
+	$str .= " -gff=$gff";
     }
     if ($s_flag){
-	$str = $str." -s_flag=".$s_flag;
+	$str .= " -s_flag=$s_flag";
     }
     if ($u){
-	$str = $str." -u=".$u;
+	$str .= " -u=$u";
     }
     if ($uniq){
-	$str = $str." -uniq=".$uniq;
+	$str .= " -uniq=$uniq";
     }
     print $str."\n";
     execute(cmd=>$str, merge=>1) if ($test == 0);
