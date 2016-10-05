@@ -66,7 +66,7 @@ $pflag = 1 if ($f1 && $f2);             # paired
 
 
 if ($i){
-    $str = "bwa index -a ".$ind." ".$r;
+    $str = "bwa index -a $ind $r";
     print $str."\n";
     execute(cmd=>$str, merge=>1) if ($test == 0);
 }
