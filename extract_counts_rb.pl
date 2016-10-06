@@ -3,7 +3,7 @@
 use tools;
 
 if (! ( $in && $outc && $outb && $outt )) { 
-    die "
+  die "
 Usage: [ -bl=4 ] # UMI-length         \
        -in=aggr_counts.tsv (can be several, comma-delimited filenames)  \
        -outc=READ_COUNTS.csv            \
@@ -15,40 +15,44 @@ $bl = 4 if !$bl;
 $bn = 4 ** $bl;
 $flag = 0;
 @ina = split(/\,/,$in);
-foreach $k (@ina){
-  open(IN,"< $k") || die "$k: $!";
-  while(<IN>){
-    chomp;
-    if ( $_ =~ /GENEID/ ){
-      @title = split(/\t/);
-      if ($_ =~ /CLASS/){
-	$flag = 1;
-      }
-      next;
-    }
-    if ( $flag ){
-      @F = split(/\t/);
-      $anno{$F[1]} = $F[0];
-      @F = @F[1..$#F];
-    }else{
-      @F = split(/\t/);
-    }    
-    next if $F[1] =~ /N/;
-    if (!exists($rc{$F[0]})){
-      for $i (2..$#F){
-	${$rc{$F[0]}}[$i - 2] = 0;
-	${$bc{$F[0]}}[$i - 2] = 0;
-      }  
-    }
-    for $i (2..$#F){
-	${$rc{$F[0]}}[$i - 2] += $F[$i];
-        ${$bc{$F[0]}}[$i - 2] += min(1,$F[$i]) if $F[$i] > 0 && ! exists($seen{$F[0]}{$F[1]}{$i});
-	$seen{$F[0]}{$F[1]}{$i} = 1 if $F[$i] > 0;   
-      }
-   
-  }
-  close(IN);
-}
+FILE:
+    foreach $k (@ina){
+      open(IN,"< $k") || die "$k: $!";
+LINE:
+      while(<IN>){
+        chomp;
+        if ( $_ =~ /GENEID/ ){
+          @title = split(/\t/);
+          if ($_ =~ /CLASS/){
+            die "this is for output from process_sam_cel_seq.pl -anno=1, which we don't have (PL)";
+            $flag = 1;
+          }
+          next;
+        }
+        if ( $flag ){                       # ?
+          @F = split(/\t/);
+          $anno{$F[1]} = $F[0];             # F[0] is gene name
+          @F = @F[1..$#F];
+        }else{
+          @F = split(/\t/);
+        }    
+        next LINE if $F[1] =~ /N/;               # NULL? \N? 
+        $gene=shift @F;
+
+        if (!exists($rc{$gene})){
+          ${$rc{$gene}}= (0) x $#F;
+          ${$bc{$gene}}= (0) x $#F;
+        }
+
+        for $i (0..$#F){                    #  $F[1] contains UMI?!?! 
+          ${$rc{$gene}}[$i] += $F[$i];
+          ${$bc{$gene}}[$i] += min(1,$F[$i]) if $F[$i] > 0 && ! exists($seen{$gene}{$F[1]}{$i});
+          $seen{$gene}{$F[1]}{$i} = 1 if $F[$i] > 0;   
+        }
+        
+      }                                     # LINE
+      close(IN);
+}                                       # FILE
 
 open(OUTC,">$outc") || die "$outc:$!";
 open(OUTB,">$outb") || die "$outb:$!";;
