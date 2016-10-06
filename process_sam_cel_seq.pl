@@ -81,7 +81,9 @@ while(<BC>){
 }
 close(BC);
 
-## if ( $anno ne "0" ){ # we don't use this
+if ( $anno ne "0" ){ # we don't use this
+  die "-anno=1 : we don't have the anno script";
+}
 ##   open(ANNO,"<",$anno);
 ##   while(<ANNO>){
 ##     chomp;
