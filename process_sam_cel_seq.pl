@@ -13,7 +13,7 @@ if (scalar @ARGV == 1) {
       -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first)    \
       -rb= 0 or 1 (optional (CEL-seq), use random UMIs)    \
       -rb_len= length of UMI (default = 4)  \
-      -dprm = 0 or 1 (for CEL-seq: 1: remove pcr duplicates) \
+      -dprm = 0 or 1 (for CEL-seq: 1: remove duplicates) \
 " if $ARGV[0] eq "help"; 
 }
 
@@ -30,7 +30,7 @@ $dprm = 0 if !$dprm;                    # duplicate removal
 %tc = (); # hash for reads per barcode and reference sequence
 %bcount = (); # count of each barcode
 $n = 0; # number of reference sequences
-$sh_single = 0; # number of reads discarded due to length constraint
+$sh_single = 0; # number of reads discarded because too short
 $min_l = 15; # minimal length required for a read to be included
 
 $p_r   = 0; # number of reads
@@ -118,6 +118,7 @@ if ( $rb ){
 open(IN,'<',$in) || die "$in: $!";
 $l_flag = 0;
 LINE:
+
 while(<IN>){
   if (/^\@/){                           # reference sequences
 ##     if (/^\@SQ/ && $anno eq "0" && !$rb){ ## anno not used anymore PL
@@ -132,77 +133,89 @@ while(<IN>){
 ##       }
 ##       $n ++;
 ##     }
+  }
+  if ($l_flag == 0){
+    @l = ($_);
+    $l_flag = 1;
+    next LINE;
   }else{
-    if ($l_flag == 0){
-      @l = ($_);
-      $l_flag = 1;
-      next LINE;
-    }else{
-      push(@l,$_);                      # read in pairs => must be name sorted
-      $l_flag = 0;
-      @d_flag = ();
-      for $i (0..$#l){
-	($QNAME[$i],$FLAG[$i],$RNAME[$i],$POS[$i],$MAPQ[$i],$CIGAR[$i],
-	 $MRNM[$i],$MPOS[$i],$ISIZE[$i],$SEQ[$i],$QUAL[$i])=split(/\t/,$l[$i]);
-	
-	@LINE = split(/\t/,$l[$i]);
-	$NM[$i] = "NA";
-	$XA[$i] = "NA";
-	$d_flag[$i] = 1;
-	foreach $el (@LINE){
-	  ($dum,$dum,$NM[$i]) = split(/\:/,$el) if ($el =~ /^NM\:/);
-	  ($dum,$dum,$XA[$i]) = split(/\:/,$el) if ($el =~ /^XA\:/);
-	}
-	$d_flag[$i] = 0 if $XA[$i] eq "NA";
-      }
-      for $i (0..$#l){
-	@flag   = split(//,reverse(dec2bin($FLAG[$i])));
-	if ( $i == 0 ){                 # read1
-	  $dpflag = 0;
-	  $BAR = substr($SEQ[$i],0,$bl) if  $i == 0  && !$flag[4]; # $bl is cell barcode length
-	  $BAR = substr(revcompl($SEQ[$i]),0,$bl) if  $i == 0  &&  $flag[4];
-	  if ( $rb ){
-	    $RBAR = substr($SEQ[$i],$bl,$rb_len) if  $i == 0  && !$flag[4]; # used for naming the cell
-	    $RBAR = substr(revcompl($SEQ[$i]),$bl,$rb_len) if  $i == 0  &&  $flag[4];
-	  }
-	  $dpflag = 1 if exists($dpseen{$BAR}{$RNAME[1]}{$POS[1]});
-	  $dpseen{$BAR}{$RNAME[1]}{$POS[1]} = 1;
-	} else {                        # read2
-	  next if $dprm && $dpflag == 1;
-	  if ( $uniq ){
-	    @ALT  = split(/;/,$XA[$i]);
-	    $u_flag = 0;
-	    foreach $xa (@ALT){
-	      last if $xa eq "NA" || $xa =~ /\s+/;
-	      ($alt_rname, $pos, $CIGAR, $nm) = split(/,/,$xa);
-	      $u_flag = 1 if ($nm <= $NM[$i]);
-	    }
-	    next if $u_flag;
-	  }
+    push(@l,$_);                      # read in pairs => must be name sorted, not checked!
+    $l_flag = 0;
+    ## @d_flag = ();                       # not used
+  }
+ READ:
+  for $i (0..$#l){
+    ($QNAME[$i],$FLAG[$i],$RNAME[$i],$POS[$i],$MAPQ[$i],$CIGAR[$i],
+     $MRNM[$i],$MPOS[$i],$ISIZE[$i],$SEQ[$i],$QUAL[$i])=split(/\t/,$l[$i]);
+    
+    @LINE = split(/\t/,$l[$i]);     # ugly, we already splitted $l[$i]
+    $NM[$i] = "NA";                 # edit distance
+    $XA[$i] = "NA";                 # alternative alignments
+    ## $d_flag[$i] = 1;                #  not used
+    foreach $el (@LINE[ 10 .. $#@LINE] ){
+      ($dum,$dum,$NM[$i]) = split(/\:/,$el) if ($el =~ /^NM\:/);
+      ($dum,$dum,$XA[$i]) = split(/\:/,$el) if ($el =~ /^XA\:/);
+    }
+    ## $d_flag[$i] = 0 if $XA[$i] eq "NA"; # not used
+  }                                 # READ
+ READ12:
+  for $i (0..$#l){
+    @flag   = split(//,reverse(dec2bin($FLAG[$i])));
 
-	  if ($flag[4]){$str = "-";}else{$str = "+";}
-	  
-	  $start  = $POS[$i] - 1;
-	  $length = length($SEQ[$i]);
-	  $p_r ++;
-	  
-	  if (length($SEQ[$i]) < $min_l){
-	    $sh_single += 1;
-	  }
-	  if ($flag[2] == 0){
-	    $bcount{$BAR} = 0 if !exists($bcount{$BAR});
-	    $bcount{$BAR} ++ if   exists($bcount{$BAR});
-	    if (exists($bar{$BAR})){
-	      $u_m ++;
-	      update_t($RNAME[$i], $NM[$i], $XA[$i], \%t, \%{$tc{$bar{$BAR}}}, $str, $u, $start, $length, \%w, $s_flag);
-	    }else{
-	      $n_bar ++;
-	    }
-	  }
-	}                               # else
-      }                                 # for $i (0..$#l)
-    }                                   # else
-  }                                     # else
+    if ( $i == 0 ){                 # read1
+      $dpflag = 0;
+      $BAR = substr($SEQ[$i],0,$bl) if  $i == 0  && !$flag[4]; # $bl is cell barcode length
+      $BAR = substr(revcompl($SEQ[$i]),0,$bl) if  $i == 0  &&  $flag[4]; # flag[4]==1: read is on reversestrand
+      if ( $rb ){
+        $RBAR = substr($SEQ[$i],$bl,$rb_len) if  $i == 0  && !$flag[4]; # UMI
+        $RBAR = substr(revcompl($SEQ[$i]),$bl,$rb_len) if  $i == 0  &&  $flag[4];
+      }
+      $dpflag = 1 if exists($dpseen{$BAR}{$RNAME[1]}{$POS[1]});
+      $dpseen{$BAR}{$RNAME[1]}{$POS[1]} = 1;
+    } else {                        # read2
+
+      next READ12 if $dprm && $dpflag == 1;
+
+      if ( $uniq ){
+        @ALT  = split(/;/,$XA[$i]);
+        $u_flag = 0;
+
+      ALT:
+        foreach $xa (@ALT){
+          last if $xa eq "NA" || $xa =~ /\s+/;
+          ($alt_rname, $pos, $CIGAR, $nm) = split(/,/,$xa);
+          $u_flag = 1 if ($nm <= $NM[$i]);
+        }
+        next if $u_flag;            # @@@ should this be next READ12 or next ALT?
+      }
+
+      if ($flag[4]){$str = "-";}else{$str = "+";}
+      
+      $start  = $POS[$i] - 1;
+      $length = length($SEQ[$i]);
+      $p_r ++;                      # read counter
+      
+      if (length($SEQ[$i]) < $min_l){
+        $sh_single ++;
+        ## why is there no 'next' here ?!?! @@@ PL
+      }
+
+      if ($flag[2] == 0){           # read was mapped
+        $bcount{$BAR} = 0 if !exists($bcount{$BAR});
+        $bcount{$BAR} ++ if   exists($bcount{$BAR});
+        if (exists($bar{$BAR})){
+          $u_m ++;                  # barcode known
+          update_t($RNAME[$i], $NM[$i], $XA[$i], \%t, \%{$tc{$bar{$BAR}}}, $str, $u, $start,
+                   # following arguments are ignored:
+                   $length, \%w, $s_flag);
+        }else{
+          $n_bar ++;                # barcode unknown
+        }
+      } else { 
+        # read was not mapped
+      }
+    }                               # end of read2
+  }                                 # READ12
 }                                       # while <IN>
 close(IN);
 
@@ -216,12 +229,12 @@ close(BOUT);
 
 open(SOUT,'>',$sout) || die "$sout: $!";
 
-print SOUT "number of reference sequences:\t".$n."\n";
+print SOUT "number of reference sequences:\t$n\n";
 print SOUT "number of reads:\t".$p_r ."\n";
-print SOUT "applied constraint on read length:\t".$min_l."\n";
-print SOUT "number of reads discarded due to length constraint:\t".$sh_single."\n";
-print SOUT "number of reads mapped with valid barcode:\t".$u_m."\n";
-print SOUT "number of reads mapped without valid barcode:\t".$n_bar."\n";
+print SOUT "applied constraint on read length:\t$min_l (NOT TRUE, PL)\n";
+print SOUT "number of reads discarded due to length constraint:\t$sh_single\n";
+print SOUT "number of reads mapped with valid barcode:\t$u_m\n";
+print SOUT "number of reads mapped without valid barcode:\t$n_bar\n";
 print SOUT "fraction of reads mapped with valid barcode:\t".($u_m/$p_r)."\n";
 print SOUT "fraction of reads mapped without valid barcode:\t".($n_bar/$p_r)."\n";
 
@@ -307,7 +320,6 @@ if ($s_flag){                           # never used
 }else{
     close(COUT);
 }
-
 
 sub update_t {
   my $RNAME = shift;
