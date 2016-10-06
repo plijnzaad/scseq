@@ -40,8 +40,8 @@ LINE:
         $gene=shift @F;
 
         if (!exists($rc{$gene})){
-          ${$rc{$gene}}= (0) x $#F;
-          ${$bc{$gene}}= (0) x $#F;
+          $rc{$gene}= [(0) x $#F];
+          $bc{$gene}= [(0) x $#F];
         }
 
         for $i (0..$#F){                    #  $F[1] contains UMI?!?! 
