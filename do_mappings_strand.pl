@@ -122,7 +122,7 @@ if ( $npr == 0 || $npr == 2){
       }
     } else { 
       $str = "process_sam_strand.pl -in=$out.sam -s=$s";
-      die "about to run '$str' but we don't have it (obsolete?)";
+      die "about to run '$str' but we don't have it (PL)";
     }
     if ($gff){
 	$str .= " -gff=$gff";
