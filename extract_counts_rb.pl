@@ -31,25 +31,24 @@ LINE:
         }
         if ( $flag ){                       # ?
           @F = split(/\t/);
-          $anno{$F[1]} = $F[0];             # F[0] is gene name
-          @F = @F[1..$#F];
+          $anno{$F[1]} = $F[0];             # Prolly class \t geneid 
+          shift(@F);
         }else{
           @F = split(/\t/);
         }    
-        next LINE if $F[1] =~ /N/;               # NULL? \N? 
+        next LINE if $F[1] =~ /N/;               # NULL? \N? or this this the UMI?
         $gene=shift @F;
 
-        if (!exists($rc{$gene})){
-          $rc{$gene}= [(0) x $#F];
-          $bc{$gene}= [(0) x $#F];
+        if (!exists($rc{$gene})){       # gene is unique right, so why needed?
+          $rc{$gene}= [(0) x $#F];      # read count
+          $bc{$gene}= [(0) x $#F];      # umi count
         }
 
         for $i (0..$#F){                    #  $F[1] contains UMI?!?! 
-          ${$rc{$gene}}[$i] += $F[$i];
-          ${$bc{$gene}}[$i] += min(1,$F[$i]) if $F[$i] > 0 && ! exists($seen{$gene}{$F[1]}{$i});
+          ${$rc{$gene}}[$i] += $F[$i];      # plain counts
+          ${$bc{$gene}}[$i] += min(1,$F[$i]) if ( $F[$i] > 0 && ! exists($seen{$gene}{$F[1]}{$i})); # unique barcodes
           $seen{$gene}{$F[1]}{$i} = 1 if $F[$i] > 0;   
-        }
-        
+        }                               # for $i
       }                                     # LINE
       close(IN);
 }                                       # FILE
