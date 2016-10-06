@@ -11,18 +11,20 @@ if (scalar @ARGV == 1) {
       -uniq=1 (optional, only unique reads)    \
       -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed )    \
       -anno= anno.csv ( optional (CEL-seq), when mapping to the genome, run get_anno.pl on sam file first)    \
-      -rb= 0 or 1 (optional (CEL-seq), use random barcodes)    \
-      -rb_len= length of random barcode (default = 4)\n" if $ARGV[0] eq "help";  
+      -rb= 0 or 1 (optional (CEL-seq), use random UMIs)    \
+      -rb_len= length of UMI (default = 4)  \
+      -dprm = 0 or 1 (for CEL-seq: 1: remove pcr duplicates) \
+" if $ARGV[0] eq "help"; 
 }
 
 $u = 0 if !$u;
 $uniq = 0 if !$uniq;
 $s_flag = 0 if !$s_flag;
-$fstr = 0 if !$fstr;
-$anno = 0 if !$anno;
-$rb = 0 if !$rb;
-$rb_len = 4 if !$rb_len;
-$dprm = 0 if !$dprm;
+$fstr = 0 if !$fstr;                    # if 1: ignore mappings to reverse strand
+$anno = 0 if !$anno;                    # not used 
+$rb = 0 if !$rb;                        # use umis
+$rb_len = 4 if !$rb_len;                # umi length
+$dprm = 0 if !$dprm;                    # duplicate removal
 
 %t = (); # hash for reads per reference sequence
 %tc = (); # hash for reads per barcode and reference sequence
@@ -75,14 +77,14 @@ my $bl;                                 # barcode length
 open(BC,'<',$bc) || die "$bc: $!";
 while(<BC>){
   chomp;
-  @F=split(/\t/);
-  $bar{$F[1]} = $F[0];                  # $bar{'GACACTCA'} => 23
-  $bl = length($F[1]);
+  ($name, $barcode)=split(/\t/);
+  $bar{$barcode} = $name;                  # $bar{'GACACTCA'} => 23
+  $bl = length($barcode); 
 }
 close(BC);
 
 if ( $anno ne "0" ){ # we don't use this
-  die "-anno=1 : we don't have the anno script";
+  die "-anno=1 : we don't have the get_anno.pl script (PL)";
 }
 ##   open(ANNO,"<",$anno);
 ##   while(<ANNO>){
@@ -107,16 +109,17 @@ if ( $anno ne "0" ){ # we don't use this
 if ( $rb ){
   $t{"+"} = (); # %t: reads per reference sequence (?)
   $t{"-"} = (); # %tc: reads per reference sequence + cellcode
-  foreach $k (keys %bar){
-    $tc{$bar{$k}}{"+"} = ();            # keys of %tc are 1 .. 96
-    $tc{$bar{$k}}{"-"} = ();
+  foreach $barcode (keys %bar){
+    $tc{$bar{$barcode}}{"+"} = ();            # keys of %tc are 1 .. 96
+    $tc{$bar{$barcode}}{"-"} = ();
   }
 }
 
 open(IN,'<',$in) || die "$in: $!";
 $l_flag = 0;
+LINE:
 while(<IN>){
-  if (/^\@/){
+  if (/^\@/){                           # reference sequences
 ##     if (/^\@SQ/ && $anno eq "0" && !$rb){ ## anno not used anymore PL
 ##       chomp;
 ##       @r = split(/\t/);
@@ -133,9 +136,9 @@ while(<IN>){
     if ($l_flag == 0){
       @l = ($_);
       $l_flag = 1;
-      next;
+      next LINE;
     }else{
-      push(@l,$_);
+      push(@l,$_);                      # read in pairs => must be name sorted
       $l_flag = 0;
       @d_flag = ();
       for $i (0..$#l){
@@ -154,9 +157,9 @@ while(<IN>){
       }
       for $i (0..$#l){
 	@flag   = split(//,reverse(dec2bin($FLAG[$i])));
-	if ( $i == 0 ){
+	if ( $i == 0 ){                 # read1
 	  $dpflag = 0;
-	  $BAR = substr($SEQ[$i],0,$bl) if  $i == 0  && !$flag[4]; # $bl is barcode length
+	  $BAR = substr($SEQ[$i],0,$bl) if  $i == 0  && !$flag[4]; # $bl is cell barcode length
 	  $BAR = substr(revcompl($SEQ[$i]),0,$bl) if  $i == 0  &&  $flag[4];
 	  if ( $rb ){
 	    $RBAR = substr($SEQ[$i],$bl,$rb_len) if  $i == 0  && !$flag[4]; # used for naming the cell
@@ -164,11 +167,7 @@ while(<IN>){
 	  }
 	  $dpflag = 1 if exists($dpseen{$BAR}{$RNAME[1]}{$POS[1]});
 	  $dpseen{$BAR}{$RNAME[1]}{$POS[1]} = 1;
-
-	  ##print STDERR ">".$RNAME[$i]."\n".revcompl(substr($SEQ[$i],$bl+$rb_len,length($SEQ[$i]) - ($bl + $rb_len)))."\n" if  $i == 0  && !$flag[4];
-	  ##print STDERR ">".$RNAME[$i]."\n".revcompl(substr(revcompl($SEQ[$i]),$bl+$rb_len,length($SEQ[$i]) - ($bl + $rb_len)))."\n" if  $i == 0  && $flag[4];
-	}else{
-	  #next if $uniq && $d_flag[$i] == 1;
+	} else {                        # read2
 	  next if $dprm && $dpflag == 1;
 	  if ( $uniq ){
 	    @ALT  = split(/;/,$XA[$i]);
@@ -183,11 +182,8 @@ while(<IN>){
 
 	  if ($flag[4]){$str = "-";}else{$str = "+";}
 	  
-	  #print STDERR join("",@flag)."\t".$SEQ[$i]."\t".$BAR."\n";
-	  
 	  $start  = $POS[$i] - 1;
 	  $length = length($SEQ[$i]);
-	  #print STDERR  join("",@flag)."\t".$str."\t".$RNAME[$i]."\t".$CIGAR[$i]."\t".$SEQ[$i]."\t".$start."\t".$length."\n";
 	  $p_r ++;
 	  
 	  if (length($SEQ[$i]) < $min_l){
@@ -198,17 +194,16 @@ while(<IN>){
 	    $bcount{$BAR} ++ if   exists($bcount{$BAR});
 	    if (exists($bar{$BAR})){
 	      $u_m ++;
-	      #print STDERR  join("",@flag)."\t".$str."\t".$RNAME[$i]."\t".$CIGAR[$i]."\t".$SEQ[$i]."\t".$start."\t".$length."\n";
 	      update_t($RNAME[$i], $NM[$i], $XA[$i], \%t, \%{$tc{$bar{$BAR}}}, $str, $u, $start, $length, \%w, $s_flag);
 	    }else{
 	      $n_bar ++;
 	    }
 	  }
-	}
-      }
-    }
-  }
-}
+	}                               # else
+      }                                 # for $i (0..$#l)
+    }                                   # else
+  }                                     # else
+}                                       # while <IN>
 close(IN);
 
 open(BOUT,'>',$bout) || die "$bout: $!";
@@ -330,21 +325,16 @@ sub update_t {
   my $h_nb  = 0;
   if ( ( $fstr && $st eq "+" ) || !$fstr ){
     if ($anno ne "0"){
-      #print STDERR join("\t",($RNAME,$st,$start,$an{$RNAME}{$st}{$start}))."\n";
       if ( exists($an{$RNAME}{$st}{$start})){
 	$h_nb  = 1;
-	#print STDERR join("\t",($RNAME,$st,$start,$an{$RNAME}{$st}{$start}))."\n";
 	fill_histo(\%{$HITS{$st}},$an{$RNAME}{$st}{$start});
       }
-      #print STDERR join("\t",($RNAME,$st,$start,$l[$i]))."\n" if !exists($an{$RNAME}{$st}{$start});
     }else{
       $h_nb  = 1;
       fill_histo(\%{$HITS{$st}},$RNAME);
-      #print STDERR join("\t",("here",$st,$RNAME,$HITS{$st}{$RNAME},$h_nb))."\n";
     }
   }
   foreach $xa (@ALT){
-    #print STDERR join("\t",($XA,"here",$st,$RNAME,$HITS{$st}{$RNAME},$h_nb))."\n";
     last if $xa eq "NA" || $xa =~ /\s+/;
     my ($alt_rname, $pos, $CIGAR, $nm) = split(/,/,$xa);
     if ($pos < 0){$xa_st = "-"; $pos = -$pos;}else{$xa_st = "+";}
@@ -356,30 +346,27 @@ sub update_t {
 ## 	  $h_nb ++;
 ## 	  fill_histo(\%{$HITS{$st}},$an{$alt_rname}{$xa_st}{$pos});
 ## 	}
-## 	#print STDERR join("\t",($alt_rname,$xa_st,$pos,$l[$i],"XA"))."\n" if !exists($an{$alt_rname}{$xa_st}{$pos});
       } else{
 	fill_histo(\%{$HITS{$xa_st}},$alt_rname);
 	$h_nb ++;
       } 
     }
-  }
+  }                                     # foreach $xa
 
   if (!$u || !(exists($HITS{"+"}) && exists($HITS{"-"}))){
     foreach $s (keys %HITS){
       foreach $rname (keys %{$HITS{$s}}){
-	#print STDERR join("\t",($s,$rname,$HITS{$s}{$rname},$h_nb))."\n";
 	if ($rb){
  	  $$t{$s}{$rname."\t".$RBAR}  = 0 if !exists($$t{$s}{$rname."\t".$RBAR});
  	  $$tc{$s}{$rname."\t".$RBAR} = 0 if !exists($$tc{$s}{$rname."\t".$RBAR});
  	  $$t{$s}{$rname."\t".$RBAR}  += $HITS{$s}{$rname}/$h_nb;
  	  $$tc{$s}{$rname."\t".$RBAR} += $HITS{$s}{$rname}/$h_nb;
- 	  #print STDERR join("\t",($s,$rname,$$t{$s}{$rname."\t".$RBAR}))."\n";
 	}else{
 	  $$t{$s}{$rname}  += $HITS{$s}{$rname}/$h_nb;
 	  $$tc{$s}{$rname} += $HITS{$s}{$rname}/$h_nb;				    
 	}
-      }
-    }
+      }                                 # foreach $rname
+    }                                   # foreach $s
   }
 }                                       # update_t
 
