@@ -115,10 +115,10 @@ if ( $npr == 0 || $npr == 2){
     if ( $cel ) {
       $str = "process_sam_cel_seq.pl -in=$out.sam -bc=$bar -anno=$anno -rb=$rb -rb_len=$rb_len";
       if ( $fstr ){
-	$str .= "-fstr=$fstr";
+	$str .= " -fstr=$fstr";
       }
       if ( $dprm ){
-	$str .= "$str -dprm=$dprm";
+	$str .= " -dprm=$dprm";
       }
     } else { 
       $str = "process_sam_strand.pl -in=$out.sam -s=$s";
