@@ -152,7 +152,7 @@ while(<IN>){
     $NM[$i] = "NA";                 # edit distance
     $XA[$i] = "NA";                 # alternative alignments
     ## $d_flag[$i] = 1;                #  not used
-    foreach $el (@LINE[ 10 .. $#@LINE] ){
+    foreach $el (@LINE[ 10 .. $#LINE] ){
       ($dum,$dum,$NM[$i]) = split(/\:/,$el) if ($el =~ /^NM\:/);
       ($dum,$dum,$XA[$i]) = split(/\:/,$el) if ($el =~ /^XA\:/);
     }
