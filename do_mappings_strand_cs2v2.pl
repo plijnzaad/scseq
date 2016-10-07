@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w -s
-use lib '/hpc/hub_oudenaarden/bin/';
+## use lib '/hpc/hub_oudenaarden/bin/';
 use tools;
 
 if (!($r && $f1 && $out && $t)){
@@ -38,13 +38,13 @@ $pflag = 1 if ($f1 && $f2);
 
 
 if ($cel384){
-	$str = "perl /hpc/hub_oudenaarden/lennart/add_bc_to_R2.pl -fastq=".$f1.",".$f2." -rb_len=".$rb_len;
+	$str = "add_bc_to_R2.pl -fastq=".$f1.",".$f2." -rb_len=".$rb_len;
    print $str."\n";
     (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
 }
 
 if ($i){
-    $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa index -a ".$ind." ".$r;
+    $str = "bwa index -a ".$ind." ".$r;
     print $str."\n";
     (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
 }
@@ -75,12 +75,12 @@ if ( $npr != 2 ){
             $B = $BR;
         }
         if ( $cel384 == 0){
-            $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
+            $str = "bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$G[$i]." > ".$H[$i];
             print $str."\n";
             (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
         }
         if ( $cel384 == 1 && $i == 1){
-            $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$K[$i]." > ".$H[$i];
+            $str = "bwa-0.6.2/bwa aln -B ".$B." -q ".$q." -n ".$aln_n." -k ".$aln_k." -l ".$l." -t ".$t." ".$r." ".$K[$i]." > ".$H[$i];
             print $str."\n";
             (system($str) == 0 or die "Could not execute ".$str."\n") if ($test == 0);
         }
@@ -88,11 +88,11 @@ if ( $npr != 2 ){
     
     if ( $nsam == 0 ){
         if ($pflag && $cel384 == 0){
-            $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa sampe -n ".$n." -N ".$N." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+            $str = "bwa sampe -n ".$n." -N ".$N." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
         }elsif ($pflag && $cel384 == 1){
-            $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa samse -n ".$n." ".$r." ".join(" ",(@H[1], @K[1]))." > ".$out.".sam";
+            $str = "bwa samse -n ".$n." ".$r." ".join(" ",(@H[1], @K[1]))." > ".$out.".sam";
         }else{
-            $str = "/hpc/hub_oudenaarden/bin/software/bwa-0.6.2/bwa samse -n ".$n." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
+            $str = "bwa samse -n ".$n." ".$r." ".join(" ",(@H, @G))." > ".$out.".sam";
         }
     }
     print $str."\n";
@@ -116,7 +116,7 @@ if ( $npr == 0 || $npr == 2){
       $str = "/hpc/hub_oudenaarden/lennart/process_sam_STRT.pl -sam=".$out.".sam -barfile=".$bar." -BCset=".$BCset." -rb_len=".$rb_len." -se=".$s;
     }
     if ( $cel384 ){
-      $str = "/hpc/hub_oudenaarden/lennart/process_sam_cel384v2.pl -sam=".$out.".sam -barfile=".$bar." -rb_len=".$rb_len;
+      $str = "process_sam_cel384v2.pl -sam=".$out.".sam -barfile=".$bar." -rb_len=".$rb_len;
     }
     if ($gff){
 	$str = $str." -gff=".$gff;
