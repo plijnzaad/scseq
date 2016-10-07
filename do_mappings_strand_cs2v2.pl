@@ -86,51 +86,51 @@ if ($i){
 @F = ($f1);
 @F = (@F, $f2) if $pflag;
 
-@G = @F;
-@H = @F;
-@K = @F;
+@fastq = @F;
+@sai = @F;
+@cbc = @F;
 
 for $i (0..$#F){
-    $G[$i] =~ s/(\.)\w+$/\.fastq/;
-    $H[$i] =~ s/(\.)\w+$/\.sai/;
+  $fastq[$i] =~ s/\.\w+$/\.fastq/; # PL: only meaningful with .txt files
+  $sai[$i] =~ s/\.\w+$/\.sai/;
 }
-$K[1] =~ s/(\.)\w+$/\_cbc.fastq/;
+$cbc[1] =~ s/(\.)\w+$/\_cbc.fastq/;
 
-if ( $npr != 2 ){
-    for $i (0..$#G){
-		if ($F[$i] =~ /txt/){
-                  $str = "qseq2fastq.pl -clean=1 -in=$F[$i]>$G[$i]";
-                  print $str."\n";
-                  execute(cmd=>$str) if $test==0;
-		}
- 		if ( $i == 0 ) {
-            $B = $BL;
-        } else {
-            $B = $BR;
-        }
-        if ( $cel384 == 0){
-            $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $G[$i] > $H[$i]";
-            print $str."\n";
-            execute(cmd=>$str, merge=>0) if ($test == 0);
-        }
-        if ( $cel384 == 1 && $i == 1){
-          $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $K[$i] > $H[$i]";
-          print $str."\n";
-          execute(cmd=>$str, merge=>0) if ($test == 0);
-        }
+if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
+  for $i (0..$#fastq){
+    if ($F[$i] =~ /txt/){
+      $str = "qseq2fastq.pl -clean=1 -in=$F[$i] > $fastq[$i]";
+      print $str."\n";
+      execute(cmd=>$str) if $test==0;
     }
-    
-    if ( $nsam == 0 ){
-        if ($pflag && $cel384 == 0){
-            $str = "bwa sampe -n $n -N $N $r @H @G > $out.sam";
-        }elsif ($pflag && $cel384 == 1){
-            $str = "bwa samse -n $n $r $H[1] $K[1] > $out.sam";
-        }else{
-            $str = "bwa samse -n $n $r @H @G > $out.sam";
-        }
+    if ( $i == 0 ) {
+      $B = $BL;
+    } else {
+      $B = $BR;
     }
-    print $str."\n";
-    execute(cmd=>$str) if ($test == 0);
+    if ( $cel384 == 0){
+      $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $fastq[$i] > $sai[$i]";
+      print $str."\n";
+      execute(cmd=>$str, merge=>0) if ($test == 0);
+    }
+    if ( $cel384 == 1 && $i == 1){
+      $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc[$i] > $sai[$i]";
+      print $str."\n";
+      execute(cmd=>$str, merge=>0) if ($test == 0);
+    }
+  }
+  
+  if ( $nsam == 0 ){
+    if ($pflag && $cel384 == 0){
+      $str = "bwa sampe -n $n -N $N $r @sai @fastq > $out.sam";
+    }elsif ($pflag && $cel384 == 1){
+      $str = "bwa samse -n $n $r $sai[1] $cbc[1] > $out.sam";
+    }else{
+      $str = "bwa samse -n $n $r @sai @fastq > $out.sam";
+    }
+  }
+  print $str."\n";
+  execute(cmd=>$str) if ($test == 0);
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
