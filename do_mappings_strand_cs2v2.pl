@@ -118,6 +118,7 @@ if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
       print $str."\n";
       execute(cmd=>$str, merge=>0) if ($test == 0);
     }
+    check_filesize(file=>$sai[$i], minsize=>1000);
   }
   
   if ( $nsam == 0 ){
@@ -131,6 +132,7 @@ if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
   }
   print $str."\n";
   execute(cmd=>$str) if ($test == 0);
+  check_filesize(file=>"$out.sam",minsize=>1000);
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
