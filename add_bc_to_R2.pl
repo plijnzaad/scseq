@@ -4,13 +4,8 @@ if (!($fastq)){
     die "usage: -fastq=s_X_1.fastq,s_X_2.fastq -rb_len=6"
 }
 
-
 @fastq = split(/\,/,$fastq);
 
-
-# create out file name
-$out = $fastq[1];
-$out =~ s/(\.)\w+$/\_cbc.fastq/;
 # set random barcodelength
 die "no -rb_len specified" unless $rb_len > 0;
 # open fastq file
