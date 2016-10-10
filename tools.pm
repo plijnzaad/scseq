@@ -451,6 +451,12 @@ sub execute {
   }
 }
 
+sub check_filesize {
+  my $args = ref $_[0] eq 'HASH' ? shift : {@_};
+  my($file, $minsize)=map{$args->{$_} } qw(file minsize);
+  my $filesize=  -s $file;
+  die "file $file non-existent or too small" unless $filesize >= $minsize;
+};
 
 1;
 
