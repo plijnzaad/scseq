@@ -68,13 +68,6 @@ if ($outdir){
 $pflag = 0;
 $pflag = 1 if ($f1 && $f2);             # paired
 
-
-if ($cel384){
-  $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len";
-  print $str."\n";
-  execute(cmd=>$str, merge=>1) if ($test == 0);
-}
-
 die "reference genome $r not found" unless -f $r;
 
 if ($i){
@@ -94,7 +87,15 @@ for $i (0..$#F){
   $fastq[$i] =~ s/\.\w+$/\.fastq/; # PL: only meaningful with .txt files
   $sai[$i] =~ s/\.\w+$/\.sai/;
 }
+
 $cbc[1] =~ s/(\.)\w+$/\_cbc.fastq/;
+
+if ($cel384){
+  $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len > $cbc[1] ";
+  print $str."\n";
+  execute(cmd=>$str, merge=>1) if ($test == 0);
+  check_filesize(file=>$cbc[1], minsize=>1000);
+}
 
 if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
   for $i (0..$#fastq){
