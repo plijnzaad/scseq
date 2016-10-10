@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w -s
-
+# add barcode
 if (!($fastq)){
     die "usage: -fastq=s_X_1.fastq,s_X_2.fastq -rb_len=6"
 }
@@ -10,15 +10,14 @@ if (!($fastq)){
 
 # create out file name
 $out = $fastq[1];
-# replace .fastq with _index.fastq
 $out =~ s/(\.)\w+$/\_cbc.fastq/;
 # set random barcodelength
 $rb_len = $rb_len;
 # open fastq file
-open($IN1, "<", $fastq[0]);
-open($IN2, "<", $fastq[1]);
+open($IN1, "<", $fastq[0]) || die "$fastq[0]: $!";
+open($IN2, "<", $fastq[1]) || die "$fastq[1]: $!";
 # open output file
-open(OUT, ">", $out);
+open(OUT, "> $out") || die "$out: $!";
 # set line counter to 0
 $i = 0;
 
