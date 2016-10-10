@@ -92,10 +92,14 @@ for $i (0..$#F){
 $cbc[1] =~ s/(\.)\w+$/\_cbc.fastq/;
 
 if ($cel384){
-  $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len > $cbc[1] ";
-  print $str."\n";
-  execute(cmd=>$str, merge=>1) if ($test == 0);
-  check_filesize(file=>$cbc[1], minsize=>1000);
+  if ( -f $cbc[1]  ) { 
+    print "Seeing file $cbc[1], not running add_bc_to_R2.pl to re-create it\n";
+  } else { 
+    $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len > $cbc[1] ";
+    print $str."\n";
+    execute(cmd=>$str, merge=>1) if ($test == 0);
+    check_filesize(file=>$cbc[1], minsize=>1000);
+  }
 }
 
 if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
