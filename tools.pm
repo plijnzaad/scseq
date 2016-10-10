@@ -1,5 +1,6 @@
 use File::Temp qw/ tempfile tempdir /;
 use List::Util 'shuffle';
+use Carp;
 
 sub s_ascii2phred {
     # returns Phred quality of basecall in Solexa/Ilumina reads given ASCII symbol
@@ -128,9 +129,9 @@ sub fasta2hash {
   ## reads fasta into a hash and return it. Hash is indexed by sequence name
   $file = $_[0];
   $hash = {};
-  open(IN,"<",$file) || die "$file: $!";
+  open(IN,"<",$file) || confess "$file: $!";
   $j = 0;
-##  open(TTY, ">>/dev/null") or die "/dev/tty: $!";
+##  open(TTY, ">>/dev/null") or confess "/dev/tty: $!";
   print STDERR "reading $file ...\n";
   while(<IN>){
     chomp;
@@ -242,7 +243,7 @@ sub clean_array {
     @{$array} = @clean_array;
 }
 sub average {
-    @_ == 1 or die ('Sub usage: $average = average(\@array);');
+    @_ == 1 or confess ('Sub usage: $average = average(\@array);');
     my ($array_ref) = @_;
     my @clean_array = @{$array_ref};
     clean_array(\@clean_array);
@@ -253,7 +254,7 @@ sub average {
 }
 
 sub median {
-    @_ == 1 or die ('Sub usage: $median = median(\@array);');
+    @_ == 1 or confess ('Sub usage: $median = median(\@array);');
     my ($array_ref) = @_;
     my @clean_array = @{$array_ref};
     clean_array(\@clean_array);
@@ -327,7 +328,7 @@ sub get_entry_gtf {
 	    $g =~ s/($entry)//g;
 	    $g =~ s/[\s\"\n]//g;
 	    #print STDERR "here 2:\t".$g."\n";
-	    #die $F[0]."\n";
+	    #confess $F[0]."\n";
 	    return $g;
 	}
     }
@@ -420,7 +421,7 @@ sub makedir {
     my $directory = shift;
     
     unless(-e $directory or mkdir $directory) {
-        die "Unable to create $directoryn";
+        confess "Unable to create $directoryn";
     }
 }
 
@@ -454,9 +455,9 @@ sub execute {
 sub check_filesize {
   my $args = ref $_[0] eq 'HASH' ? shift : {@_};
   my($file, $minsize)=map{$args->{$_} } qw(file minsize);
-  my $filesize=  -s $file;
-  die "file $file non-existent or too small" unless $filesize >= $minsize;
-};
+  my $filesize=  (-s $file || 0);
+  confess "file $file non-existent or too small" unless $filesize >= $minsize;
+}
 
 1;
 

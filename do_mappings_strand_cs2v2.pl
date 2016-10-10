@@ -1,10 +1,11 @@
 #!/usr/bin/perl -w -s
 use tools;
+use Carp;
 
 $LIST_SEPARATOR=" ";                    # for interpolating arrays inside strings (default anyway)
 
 if (!($r && $f1 && $out && $t)){
-    die "usage:  -r=REFERENCE     \
+    confess "usage:  -r=REFERENCE     \
                  -f1=READ1    \
                  -f2=READ2 (optional)    \
                  -out=OUTPUT_PREFIX    \
@@ -55,8 +56,8 @@ $rb = 0 if !$rb;
 $rb_len = 4 if !$rb_len;
 $dprm = 0 if !$dprm;
 $cel384 = 0 if !$cel384;
-$rb_len = 6 if $cel384;
-$BR = 8+$rb_len if $cel384; # hard-coded !?!?
+$rb_len = 6 if $cel384;                 ## @@ hardcoded? PL
+$BR = 8+$rb_len if $cel384; # @@ hardcoded? PL
 $aln_n = 0.04 if !$aln_n; # edit distance
 $aln_k = 2 if !$aln_k; # edit distance in seed
 
@@ -68,7 +69,7 @@ if ($outdir){
 $pflag = 0;
 $pflag = 1 if ($f1 && $f2);             # paired
 
-die "reference genome $r not found" unless -f $r;
+confess "reference genome $r not found" unless -f $r;
 
 if ($i){
     $str = "bwa index -a $ind $r";
@@ -84,7 +85,7 @@ if ($i){
 @cbc = @F;
 
 for $i (0..$#F){
-  $fastq[$i] =~ s/\.\w+$/\.fastq/; # PL: only meaningful with .txt files
+  $fastq[$i] =~ s/\.\w+$/\.fastq/; # PL: only meaningful if there are .txt files
   $sai[$i] =~ s/\.\w+$/\.sai/;
 }
 
