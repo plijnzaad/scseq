@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w -s
 use tools;
-use Carp;
+# use Carp;
 
 $LIST_SEPARATOR=" ";                    # for interpolating arrays inside strings (default anyway)
 
 if (!($r && $f1 && $out && $t)){
-    confess "usage:  -r=REFERENCE     \
+    confess "Usage:  $0 -r=REFERENCE     \
                  -f1=READ1    \
                  -f2=READ2 (optional)    \
                  -out=OUTPUT_PREFIX    \
@@ -111,6 +111,7 @@ if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
       $B = $BR;
     }
     if ( $cel384 == 0){
+      warn "this code may be obsolete";
       $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $fastq[$i] > $sai[$i]";
       print $str."\n";
       execute(cmd=>$str, merge=>0) if ($test == 0);
@@ -119,8 +120,8 @@ if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
       $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc[$i] > $sai[$i]";
       print $str."\n";
       execute(cmd=>$str, merge=>0) if ($test == 0);
+      check_filesize(file=>$sai[$i], minsize=>1000);
     }
-    check_filesize(file=>$sai[$i], minsize=>1000);
   }
   
   if ( $nsam == 0 ){
