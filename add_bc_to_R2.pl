@@ -12,8 +12,9 @@ die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
 $cbc_len = 8 if !$cbc_len;
 
 my $prefix_len = $cbc_len + $rb_len;
-my $barcode_quality='!';                # i.e. 0 
-# (This used to be 'F', i.e. 37, but we don't want this to map ...)
+my $barcode_quality='F';                # i.e. 37
+## if the quality is too low, bwa makes the BC:Z:<barcodesequence> all lowercase,
+## and it is not mapped anyway due to -B N flag.
 
 @fastq = split(/\,/,$fastq);
 
