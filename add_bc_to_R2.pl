@@ -48,6 +48,5 @@ while( not eof $IN1 and not eof $IN2){
 
 close $IN1;
 close $IN2;
-close OUT;
 
 
