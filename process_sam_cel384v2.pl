@@ -1,8 +1,9 @@
 #!/usr/bin/perl -w -s
 use List::Util 'sum';
+use Carp;
 
-if (scalar @ARGV == 1){
-    die "usage: -fastq=s_X_1.fastq -sam=sam.sam -barfile=barfile.csv -rb_len=rb_len" if $ARGV[0] eq "help";
+if ( !($sam && $barfile && $rb_len && cbc_$len) ) { 
+  die "usage: $0 -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH";
 }
 
 
@@ -24,13 +25,10 @@ print LOG "Process sam started\n";
 open(IN,"<",$barfile);
 while(<IN>){	
 	chomp;
-#	print $_."\n";
 	@line = split(/\t/,$_);
 	$bar{$line[1]} = $line[0];
-#	print $line[1]."\t".$line[0]."\n";
 	push(@cells, $line[1]);
 }
-
 close(IN);
 
 $i = 0;
@@ -62,7 +60,6 @@ $UMI = "NA";
 @bar_map = ();
 %bar_map_h = ();
 
-#print $se."\n";
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 
 open(IN,"<",$sam);
@@ -71,27 +68,17 @@ while( <IN> ){
 	$line1 = $_;
 
 #read through the header of the sam-file;
-
 	if (substr($line1,1,2) eq "SQ" ){
-
 		next;
 	}
 	if (substr($line1,1,2) eq "PG" ){
 		next;
 	}
-
-#	if ($i > 100000){
-#		last;
-#	}
-	
 # here all the information is extracted from the sam-file line;
     @r1 = split(/\t/,$line1);
     ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,$RBC)=split(/\t/,$line1);
     $cellbc = substr($RBC,($rb_len)+5,8);
-#	print "R1\t".$SEQ."\t".$RNAME."\n";
-#	print "cellbc\t".$cellbc."\t";
     $UMI = substr($RBC,5,$rb_len);
-#	print "UMI\t".$UMI."\n";
     $NM = "NA";
     $XA = "NA";
     $X0 = 0;
@@ -111,23 +98,15 @@ while( <IN> ){
     }
     if (exists $bar{$cellbc}){
         if ($X0 == 1 && $FLAG != 16){
-#			if ($FLAG[1] == 153 or $FLAG[1] == 145){
                 $tc{$RNAME}{$cellbc}{$UMI}++;
-#			}
-#			if ($FLAG[1] == 137 or $FLAG[1] == 129){
-#				$tc{$RNAME[$j]}{$currbar}{$UMI}++;
-#			}
         }
     }
 	
-
     $i++;
     if ($i == $x*1000000){
         print LOG $x." million reads processed\n";
         $x++;
     }
-	
-	
 }
 
 	
@@ -205,15 +184,3 @@ print SOUT "fraction of reads mapped uniquely: ".$tot_map_reads_u/$i."\n";
 print SOUT "number of mapped reads with valid barcode: ".$trc."\n";
 print SOUT "fraction of reads mapped with valid barcode: ".$trc/$i."\n";
 close SOUT;
-
-
-
-#open (BAROUT, ">", "mapped_bar.csv");
-#foreach $barcode (keys %bar_map_h){
-#	print BAROUT $barcode."\t".$bar_map_h{$barcode}."\n";
-#}
-#close BAROUT;
-
-
-
-
