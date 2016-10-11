@@ -2,7 +2,7 @@
 use List::Util 'sum';
 use Carp;
 
-if ( !($sam && $barfile && $rb_len && cbc_$len) ) { 
+if ( !($sam && $barfile && $rb_len && $cbc_len) ) { 
   die "usage: $0 -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH";
 }
 
