@@ -17,7 +17,6 @@ if (!($r && $f1 && $out && $t)){
                  -aln_n=edit distance  (bwa aln option -n, default 0.04)  \
                  -aln_k=edit distance in seed  (bwa aln option -k, default 2)   \
                  -l=SEED_LENGTH  (bwa -l option)  \
-                 -BL=barcode length left read (bwa aln option -B, default is 0)    \
                  -BR=barcode length right read (bwa aln option -B, default 0)   \
                  -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
                  -npr=0,1,2: 0: map and process; 1: only map ; 2: only process
@@ -35,7 +34,6 @@ $N = 100; # maximal number of paired reads to output in XA tag
 $q = 0 if !$q; # base quality cutoff for trimming
 $l = 200 if !$l; # seed length
 $i = 0 if !$i; # create index
-$BL = 0 if !$BL;
 $BR = 0 if !$BR;
 $npr  = 0 if !$npr;
 $nsam = 0 if !$nsam;
