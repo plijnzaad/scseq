@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w -s
 use tools;
-# use Carp;
+use Carp;
+use File::Basename;
 
 $LIST_SEPARATOR=" ";                    # for interpolating arrays inside strings (default anyway)
 
@@ -64,7 +65,7 @@ $aln_k = 2 if !$aln_k; # edit distance in seed
 $test = 0 if !$test;
 if ($outdir){
     makedir($outdir);
-    $out = $outdir."/".$out;
+    $out = "$outdir/$out";
 }
 $pflag = 0;
 $pflag = 1 if ($f1 && $f2);             # paired
@@ -85,8 +86,9 @@ if ($i){
 @cbc = @F;
 
 for $i (0..$#F){
-  $fastq[$i] =~ s/\.\w+$/\.fastq/; # PL: only meaningful if there are .txt files
-  $sai[$i] =~ s/\.\w+$/\.sai/;
+  my ($name, $path, $ext)=fileparse($F[$i], ('.txt', '.fastq'));
+  $fastq[$i] = "$outdir/$name.fastq"; 
+  $sai[$i] = "$outdir/$name.sai"; 
 }
 
 $cbc[1] =~ s/(\.)\w+$/\_cbc.fastq/;
@@ -103,6 +105,7 @@ if ($cel384){
 }
 
 if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
+
   for $i (0..$#fastq){
     if ($F[$i] =~ /txt/){
       $str = "qseq2fastq.pl -clean=1 -in=$F[$i] > $fastq[$i]";
@@ -119,12 +122,13 @@ if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
       $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $fastq[$i] > $sai[$i]";
       print $str."\n";
       execute(cmd=>$str, merge=>0) if ($test == 0);
-    }
-    if ( $cel384 == 1 && $i == 1){
-      $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc[$i] > $sai[$i]";
-      print $str."\n";
-      execute(cmd=>$str, merge=>0) if ($test == 0);
-      check_filesize(file=>$sai[$i], minsize=>1000);
+    } else {
+      if ( $i == 1) {                   # newer code only run for read2s, prefixed with barcode of length $B
+        $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc[$i] > $sai[$i]";
+        print $str."\n";
+        execute(cmd=>$str, merge=>0) if ($test == 0);
+        check_filesize(file=>$sai[$i], minsize=>1000);
+      }
     }
   }
   
