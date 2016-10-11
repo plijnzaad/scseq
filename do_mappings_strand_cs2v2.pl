@@ -20,17 +20,11 @@ if (!($r && $f1 && $out && $t)){
                  -BL=barcode length left read (bwa aln option -B, default is 0)    \
                  -BR=barcode length right read (bwa aln option -B, default 0)   \
                  -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
-                 -gff=DATA.gff (optional, produces wig ?? files. Passed to process_sam_cel_seq.pl  )    \
-                 -s_flag=1 (optional: strand specific mapping. Passed to process_sam_cel_seq.pl)    \
-                 -u=1 (optional: only reads mapping to one strand. Passed to process_sam_cel_seq.pl )    \
-                 -uniq=1 (optional, keep only uniquely mapped reads. Passed to process_sam_cel_seq.pl )    \
                  -npr=0,1,2: 0: map and process; 1: only map ; 2: only process
                  -nsam= 0 or 1 (1: do *not* produce new sam file (calls bwa samse/sampe)    \
                  -bar=cel-seq_barcodes.csv    \
                  -rb_len= length of UMI (default = 6)  \
                  -cbc_len= length of cellseq2 barcode (default: 8) \
-                 -fstr= 1 or 0 ( if 1 only mappings to the sense strand are allowed; passed to process_sam_cel_seq.pl )    \
-                 -s_flag= 0 or 1 (separate output for sense and antisense hits, passed to process_sam_cel_seq.pl)  \
                  -test=0 or 1 (latter runs in test mode, doesn't call external programs) \
 ";
 }
@@ -45,7 +39,6 @@ $BL = 0 if !$BL;
 $BR = 0 if !$BR;
 $npr  = 0 if !$npr;
 $nsam = 0 if !$nsam;
-$fstr = 0 if !$fstr;
 $ind = "is" if !$ind;
 $rb_len = 6 if !$rb_len;
 $cbc_len = 8 if !$cbc_len;
@@ -103,18 +96,6 @@ if ( $npr == 0 || $npr == 2){
   $s = 0 if $pflag;
   ## if ( $STRT ) # unknown, see before commit 61a2fce50246ce47 (2016-10-11 15:10:00)
   $str = "process_sam_cel384v2.pl -sam=$out.sam -barfile=$bar -rb_len=$rb_len";
-  if ($gff){
-    $str .= "-gff=$gff";
-  }
-  if ($s_flag){
-    $str .= " -s_flag=$s_flag";
-  }
-  if ($u){
-    $str .= " -u=$u";
-  }
-  if ($uniq){
-    $str .= " -uniq=$uniq";
-  }
   print $str."\n";
   execute(cmd=>$str, merge=>1) if ($test == 0);
 }                                       # if ( $npr == 0 || $npr == 2)
