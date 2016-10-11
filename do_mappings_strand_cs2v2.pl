@@ -48,7 +48,7 @@ $nsam = 0 if !$nsam;
 $fstr = 0 if !$fstr;
 $ind = "is" if !$ind;
 $rb_len = 6 if !$rb_len;
-$cbc_len = 8 if !$rb_len;
+$cbc_len = 8 if !$cbc_len;
 
 $BR = $cbc_len+$rb_len;
 
