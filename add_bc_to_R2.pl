@@ -8,12 +8,15 @@ if (!($fastq)){
   die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  [ -cbc_len=8 ] > s_cbc.fastq ";
 }
 
+die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
 $cbc_len = 8 if !$cbc_len;
+
+my $prefix_len = $cbc_len + $rb_len;
+my $barcode_quality='!';                # i.e. 0 
+# (This used to be 'F', i.e. 37, but we don't want this to map ...)
 
 @fastq = split(/\,/,$fastq);
 
-# set random barcodelength
-die "no -rb_len specified" unless $rb_len > 0;
 # open fastq file
 open($IN1, "<", $fastq[0]) || die "$fastq[0]: $!";
 open($IN2, "<", $fastq[1]) || die "$fastq[1]: $!";
@@ -24,29 +27,25 @@ LINE:
 while( not eof $IN1 and not eof $IN2) {
 	$line1 = <$IN1>;
 	$line2 = <$IN2>; 
-	chomp $line1;
-	chomp $line2;	
-# extract index from first line of fastq file	
 	if ($i == 0){                   # id-line
-		print  $line2."\n";
+		print  $line2;
 		$i++;
-		next;
+		next LINE;
 	}
-# print index in second line of fastq file
 	if ($i == 1){                   # sequence line
-		$bar = substr($line1,0, $cbc_len + $rb_len);
-		print  "$bar$line2\n";
+		$bar = substr($line1, 0, $prefix_len);
+		print  "$bar$line2";
 		$i++;
-		next;
+		next LINE;
 	}
 	if ($i == 2){                   # the '+'-line
-		print  $line2."\n";
+		print $line2;
 		$i++;
-		next;
+		next LINE;
 	}
-# print extra quality score characters 
-	if ($i == 3){
-		print  "F" x ($cbc_len +$rb_len).$line2."\n";
+	if ($i == 3){                   # line with Phred qualities
+          my $qual= $barcode_quality  x $prefix_len;
+		print  "$qual$line2";
 		$i = 0;
 	}
 }                                       # LINE
