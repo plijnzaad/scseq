@@ -91,7 +91,7 @@ if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
 
 if ( $npr == 0 || $npr == 2){
   ## if ( $STRT ) # unknown, see before commit 61a2fce50246ce47 (2016-10-11 15:10:00)
-  $str = "process_sam_cel384v2.pl -sam=$out.sam -barfile=$bar -rb_len=$rb_len";
+  $str = "process_sam_cel384v2.pl -sam=$out.sam -barfile=$bar -rb_len=$rb_len -cbc_len=$cbc_len";
   print $str."\n";
   execute(cmd=>$str, merge=>1) if ($test == 0);
 }                                       # if ( $npr == 0 || $npr == 2)
