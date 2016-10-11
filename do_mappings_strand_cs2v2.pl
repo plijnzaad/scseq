@@ -97,7 +97,7 @@ if ($cel384){
   } else { 
     $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len > $cbc[1] ";
     print $str."\n";
-    execute(cmd=>$str, merge=>1) if ($test == 0);
+    execute(cmd=>$str, merge=>0) if ($test == 0);
     check_filesize(file=>$cbc[1], minsize=>1000);
   }
 }
