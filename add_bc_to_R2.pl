@@ -5,11 +5,11 @@
 ## 
 
 if (!($fastq)){
-  die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  [ -cbc_len=8 ] > s_cbc.fastq ";
+  die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  -cbc_len=8 > s_cbc.fastq ";
 }
 
 die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
-$cbc_len = 8 if !$cbc_len;
+die "no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar code
 
 my $prefix_len = $cbc_len + $rb_len;
 my $barcode_quality='F';                # i.e. 37

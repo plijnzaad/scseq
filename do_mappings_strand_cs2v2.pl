@@ -76,7 +76,7 @@ $cbc=$f2; $cbc =~ s/(\.)\w+$/\_cbc.fastq/;
 if ( -f $cbc  ) { 
   print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
 } else { 
-  $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len > $cbc ";
+  $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len > $cbc ";
   print $str."\n";
   execute(cmd=>$str, merge=>0) if ($test == 0);
   check_filesize(file=>$cbc, minsize=>1000);
