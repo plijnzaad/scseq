@@ -60,17 +60,24 @@ if ($i){
   execute(cmd=>$str, merge=>1) if ($test == 0);
 }
 
-my ($name, $path, $ext)=fileparse($f2, ('.fastq'));
+my ($name, $path, $ext)=fileparse($f2, ('.fastq', '.fastq.gz'));
+
+my $cbc = "$path/${name}_cbc.fastq";       # output from add_bc_to_R2, input to bwa
+my $gzip = " cat ";
+
+if ( $ext =~ /\.gz/ ) { 
+  $cbc .= ".gz";
+  $gzip = " gzip ";
+}
+
 $sai = "$outdir/$name.sai"; 
-$cbc=$f2; $cbc =~ s/(\.)\w+$/\_cbc.fastq/;
 
 if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
-  die "obsolete, see before commit 61a2fce50246ce47 (2016-10-11 15:10:00)" if ($F[$i] =~ /txt/);
-
+  if ($F[$i] =~ /txt/)  { die "obsolete, see before commit 61a2fce50246ce47 (2016-10-11 15:10:00)";}
   if ( -f $cbc  ) { 
     print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
   } else { 
-    $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len > $cbc ";
+    $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len | $gzip > $cbc ";
     print $str."\n";
     execute(cmd=>$str, merge=>0) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);

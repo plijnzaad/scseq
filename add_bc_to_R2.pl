@@ -19,8 +19,11 @@ my $barcode_quality='F';                # i.e. 37
 @fastq = split(/\,/,$fastq);
 
 # open fastq file
-open($IN1, "<", $fastq[0]) || die "$fastq[0]: $!";
-open($IN2, "<", $fastq[1]) || die "$fastq[1]: $!";
+my $cat = "cat ";
+$cat = "zcat " if $fastq =~ /\.gz/;
+
+open($IN1, "$cat $fastq[0] |") || die "$fastq[0]: $!";
+open($IN2, "$cat $fastq[1] |") || die "$fastq[1]: $!";
 
 $i = 0; 
 
@@ -51,7 +54,7 @@ while( not eof $IN1 and not eof $IN2) {
 	}
 }                                       # LINE
 
-close $IN1;
-close $IN2;
+close $IN1 || die "$fastq[0]: $!";
+close $IN2 || die "$fastq[1]: $!";
 
 
