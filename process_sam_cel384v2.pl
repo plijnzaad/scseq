@@ -17,16 +17,15 @@ open(LOG, ">", $log) || die "$log: $!";
 print LOG "Process sam started\n";
 
 open(IN,"<",$barfile) || die "$barfile:$!";
-while(<IN>){	
+while(<IN>){   # lines look like ^10 \t GTCGTTCC$ Better use strings for barcode ids!!
   chomp;
-  @line = split(/\t/,$_);
-  $bar{$line[1]} = $line[0];
-  push(@cells, $line[1]);
+  my($id,$barcode) = split(/\t/,$_);
+  $bar{$barcode} = $id;                 # e.g. $bar{'GTCGTTCC'}=> 10 . 
+  push(@cells, $barcode);
 }
 close(IN);
 
-$i = 0;
-$x = 1;
+$nreads = 0;
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 
@@ -57,13 +56,13 @@ while( <IN> ) {
   $X0 = 0;
 
   foreach $el (@rest){
-    ($dum,$dum,$NM) = split(/\:/,$el) if ($el =~ /^NM\:/);
-    ($dum,$dum,$XA) = split(/\:/,$el) if ($el =~ /^XA\:/);
-    ($dum,$dum,$X0) = split(/\:/,$el) if ($el =~ /^X0\:/);
+    ($dum,$dum,$NM) = split(/\:/,$el) if ($el =~ /^NM\:/); # NM: number of mismatches
+    ($dum,$dum,$XA) = split(/\:/,$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
+    ($dum,$dum,$X0) = split(/\:/,$el) if ($el =~ /^X0\:/); # X0: number of best hits
   }
   ## $X0 = number of locations to which the read maps
   if ($X0 > 0){
-    $tot_map_reads++;                   # wrong ...
+    $tot_map_reads++;                   # PL: wrong ...
     ## $tot_map_reads += $X0; # PL
   }
   if ($X0 == 1){
@@ -75,11 +74,8 @@ while( <IN> ) {
     }
   }
   
-  $i++;
-  if ($i == $x*1000000){
-    print LOG $x." million reads processed\n";
-    $x++;
-  }
+  $nreads++;
+  print LOG int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
 }                                       # SAMLINE
 close(IN);
 close(LOG);
@@ -150,12 +146,13 @@ UMI:
 }                                       # GENE
 
 $sout   =~ s/(\.)\w+$/\.sout/;
-open (SOUT, "> $sout");
-print SOUT "number of reads: ".$i."\n";
-print SOUT "number of mapped reads: ".$tot_map_reads."\n";
-print SOUT "fraction of reads mapped: ".$tot_map_reads/$i."\n";
-print SOUT "number of uniquely mapped reads: ".$tot_map_reads_u."\n";
-print SOUT "fraction of reads mapped uniquely: ".$tot_map_reads_u/$i."\n";
-print SOUT "number of mapped reads with valid barcode: ".$trc."\n";
-print SOUT "fraction of reads mapped with valid barcode: ".$trc/$i."\n";
+open (SOUT, "> $sout") || die "$sout: $!";
+print SOUT "number of reads: $nreads\n";
+print SOUT "number of mapped reads: $tot_map_reads\n";
+print SOUT "fraction of reads mapped: ".$tot_map_reads/$nreads."\n";
+print SOUT "number of uniquely mapped reads: $tot_map_reads_u\n";
+print SOUT "fraction of reads mapped uniquely: ".$tot_map_reads_u/$nreads."\n";
+print SOUT "number of mapped reads with valid barcode: $trc\n";
+print SOUT "fraction of reads mapped with valid barcode: ".$trc/$nreads."\n";
+
 close SOUT;
