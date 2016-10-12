@@ -54,24 +54,18 @@ while( <IN> ) {
   my $UMI = substr($RBC,5,$rb_len);
   my $cbc = substr($RBC,(5+$rb_len), $cbc_len); # cell barcode
 
-  my $NM = "NA";
-  my $XA = "NA";
   my $X0 = 0;
   my $dum = 'NA';
 
   foreach my $el (@rest){
-    ($dum,$dum,$NM) = split(/\:/,$el) if ($el =~ /^NM\:/); # NM: number of mismatches
-    ($dum,$dum,$XA) = split(/\:/,$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
+    # ($dum,$dum,$NM) = split(/\:/,$el) if ($el =~ /^NM\:/); # NM: number of mismatches
+    # ($dum,$dum,$XA) = split(/\:/,$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
     ($dum,$dum,$X0) = split(/\:/,$el) if ($el =~ /^X0\:/); # X0: number of best hits
   }
-  ## $X0 = number of locations to which the read maps
-  if ($X0 > 0){
-    $tot_map_reads++;                   # PL: wrong ...
-    ## $tot_map_reads += $X0; # PL
-  }
-  if ($X0 == 1){
-    $tot_map_reads_u++;
-  }
+  
+  $tot_map_reads += ($X0 > 0); # $X0 = number of locations to which the read maps
+  $tot_map_reads_u += ($X0 == 1);
+
   if (exists $bar{$cbc}){
     if ($X0 == 1 && $FLAG != 16){       # flag==16: read is reverse strand, i.e. doesn't map properly
       $tc{$RNAME}{$cbc}{$UMI}++;
