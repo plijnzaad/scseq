@@ -459,6 +459,16 @@ sub check_filesize {
   confess "file $file non-existent or too small" unless $filesize >= $minsize;
 }
 
+sub commafy {
+  ## 5753757264 => "5,753,757,264"
+  ## based on recursion trick seen somewhere on stackoverflow :-)
+  my($i, $rest)=@_; $rest="" unless defined $rest;
+  die "commafy: $i is not a natural number," unless $i =~ /^\d+$/;
+  ( $i < 1000) ? "$i$rest" :
+      commafy(int($i/1000), sprintf(",%03d", $i%1000) . $rest);
+}
+
+
 1;
 
 
