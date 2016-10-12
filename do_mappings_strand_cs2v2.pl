@@ -64,17 +64,18 @@ my ($name, $path, $ext)=fileparse($f2, ('.fastq'));
 $sai = "$outdir/$name.sai"; 
 $cbc=$f2; $cbc =~ s/(\.)\w+$/\_cbc.fastq/;
 
-if ( -f $cbc  ) { 
-  print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
-} else { 
-  $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len > $cbc ";
-  print $str."\n";
-  execute(cmd=>$str, merge=>0) if ($test == 0);
-  check_filesize(file=>$cbc, minsize=>1000);
-}
-
-if ( $npr != 2 ){                       # npr is 0 or 1: do mapping
+if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   die "obsolete, see before commit 61a2fce50246ce47 (2016-10-11 15:10:00)" if ($F[$i] =~ /txt/);
+
+  if ( -f $cbc  ) { 
+    print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
+  } else { 
+    $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len > $cbc ";
+    print $str."\n";
+    execute(cmd=>$str, merge=>0) if ($test == 0);
+    check_filesize(file=>$cbc, minsize=>1000);
+  }
+
   $B = $BR;
   $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc > $sai";
   print $str."\n";
