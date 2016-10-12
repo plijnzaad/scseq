@@ -2,10 +2,11 @@
 use Carp;
 use strict;
 
-if ( !($main::sam && $main::barfile && $main::rb_len && $main::cbc_len) ) { 
+our ($sam, $barfile, $rb_len, $cbc_len);
+
+if ( !($sam && $barfile && $rb_len && $cbc_len) ) { 
   die "usage: $0 -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH";
 }
-our ($sam, $barfile, $rb_len, $cbc_len) = ($main::sam, $main::barfile, $main::rb_len, $main::cbc_len);
 
 my @cells = ();
 my %bar = ();
@@ -20,7 +21,7 @@ print LOG "Process sam started\n";
 open(IN,"<",$barfile) || die "$barfile:$!";
 while(<IN>){   # lines look like ^10 \t GTCGTTCC$ Better use strings for barcode ids!!
   chomp;
-  my($id,$barcode) = split(/\t/,$_);
+  my($id,$barcode) = split("\t",$_);
   $bar{$barcode} = $id;                 # e.g. $bar{'GTCGTTCC'}=> 10 . 
   push(@cells, $barcode);
 }
@@ -37,18 +38,17 @@ open(IN,"<",$sam) || die "$sam: $!";
 SAMLINE:
 while( <IN> ) {
   chomp $_;
-  my $line1 = $_;
 
-  if (substr($line1,1,2) eq "SQ" ){     # PL: keep count
+  if (substr($_,1,2) eq "SQ" ){     # PL: keep count
     next SAMLINE;
   }
 
-  if (substr($line1,1,2) eq "PG" ){
-    print LOG "$line1";                 # PL:should check if it contains bwa
+  if (substr($_,1,2) eq "PG" ){
+    print LOG "$_";                 # PL:should check if it contains bwa
     next SAMLINE;
   }
 
-  my @r1 = split(/\t/,$line1);
+  my @r1 = split("\t",$_);
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
   my $RBC=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC)
   my $UMI = substr($RBC,5,$rb_len);
@@ -58,9 +58,9 @@ while( <IN> ) {
   my $dum = 'NA';
 
   foreach my $el (@rest){
-    # ($dum,$dum,$NM) = split(/\:/,$el) if ($el =~ /^NM\:/); # NM: number of mismatches
-    # ($dum,$dum,$XA) = split(/\:/,$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
-    ($dum,$dum,$X0) = split(/\:/,$el) if ($el =~ /^X0\:/); # X0: number of best hits
+    # ($dum,$dum,$NM) = split(":",$el) if ($el =~ /^NM\:/); # NM: number of mismatches
+    # ($dum,$dum,$XA) = split(":",$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
+    ($dum,$dum,$X0) = split(":",$el) if ($el =~ /^X0\:/); # X0: number of best hits
   }
   
   $tot_map_reads += ($X0 > 0); # $X0 = number of locations to which the read maps
