@@ -1,17 +1,18 @@
 #!/usr/bin/perl -w -s
-use List::Util 'sum';
 use Carp;
+use strict;
 
-if ( !($sam && $barfile && $rb_len && $cbc_len) ) { 
+if ( !($main::sam && $main::barfile && $main::rb_len && $main::cbc_len) ) { 
   die "usage: $0 -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH";
 }
+our ($sam, $barfile, $rb_len, $cbc_len) = ($main::sam, $main::barfile, $main::rb_len, $main::cbc_len);
 
-@cells = ();
-%bar = ();
-%tc = ();
+my @cells = ();
+my %bar = ();
+my %tc = ();
 
 # open barcode file, read all 384 barcodes
-$log = $sam;
+my $log = $sam;
 $log   =~ s/(\.)\w+$/\.log/;
 open(LOG, ">", $log) || die "$log: $!";
 print LOG "Process sam started\n";
@@ -25,7 +26,9 @@ while(<IN>){   # lines look like ^10 \t GTCGTTCC$ Better use strings for barcode
 }
 close(IN);
 
-$nreads = 0;
+my $nreads = 0;
+my $tot_map_reads=0;
+my $tot_map_reads_u=0;
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 
@@ -34,7 +37,7 @@ open(IN,"<",$sam) || die "$sam: $!";
 SAMLINE:
 while( <IN> ) {
   chomp $_;
-  $line1 = $_;
+  my $line1 = $_;
 
   if (substr($line1,1,2) eq "SQ" ){     # PL: keep count
     next SAMLINE;
@@ -45,17 +48,18 @@ while( <IN> ) {
     next SAMLINE;
   }
 
-  @r1 = split(/\t/,$line1);
+  my @r1 = split(/\t/,$line1);
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
   my $RBC=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC)
   my $UMI = substr($RBC,5,$rb_len);
   my $cbc = substr($RBC,(5+$rb_len), $cbc_len); # cell barcode
 
-  $NM = "NA";
-  $XA = "NA";
-  $X0 = 0;
+  my $NM = "NA";
+  my $XA = "NA";
+  my $X0 = 0;
+  my $dum = 'NA';
 
-  foreach $el (@rest){
+  foreach my $el (@rest){
     ($dum,$dum,$NM) = split(/\:/,$el) if ($el =~ /^NM\:/); # NM: number of mismatches
     ($dum,$dum,$XA) = split(/\:/,$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
     ($dum,$dum,$X0) = split(/\:/,$el) if ($el =~ /^X0\:/); # X0: number of best hits
@@ -84,16 +88,17 @@ my $bn = 4 ** $rb_len;
 
 # create a gene array to loop through while writing the data frame;
 
-@genes = keys %tc;
+my @genes = keys %tc;
 
-$coutt = $sam;
-$coutb = $sam;
-$coutc = $sam;
-$sout = $sam;
-$trc = 0;
+my $coutt = $sam;
+my $coutb = $sam;
+my $coutc = $sam;
+my $sout = $sam;
+
 $coutt   =~ s/(\.)\w+$/\.coutt\.csv/;
 $coutb   =~ s/(\.)\w+$/\.coutb\.csv/;
 $coutc   =~ s/(\.)\w+$/\.coutc\.csv/;
+$sout   =~ s/(\.)\w+$/\.sout/;
 
 open(OUTT, "> $coutt") || die "$coutt: $!";
 open(OUTB, "> $coutb") || die "$coutb: $!";
@@ -103,7 +108,7 @@ print OUTB "GENEID";
 print OUTC "GENEID";
 print OUTT "GENEID";
 
-foreach $cbc (@cells){
+foreach my $cbc (@cells){
   print OUTB "\t".$bar{$cbc};
   print OUTC "\t".$bar{$cbc};
   print OUTT "\t".$bar{$cbc};
@@ -112,17 +117,19 @@ print OUTB "\n";
 print OUTC "\n";
 print OUTT "\n";	
 
+my $trc = 0;
+
 GENE:
-foreach $gene (sort @genes){
+foreach my $gene (sort @genes){
   print OUTB $gene;
   print OUTT $gene;
   print OUTC $gene;
 CELL:
-  foreach $cbc (@cells){
+  foreach my $cbc (@cells){
     my $n = 0;                             # distinct UMIs for this gene+cell
     my $rc = 0;                            # total reads for this gene+cell
   UMI:
-    foreach $umi (keys %{$tc{$gene}{$cbc}}){
+    foreach my $umi (keys %{$tc{$gene}{$cbc}}){
       next UMI if ($umi =~ /N/i);        # @@@ keep count of these, for stat purposes
       my $reads=$tc{$gene}{$cbc}{$umi};
       $n += ($reads > 0);
@@ -141,7 +148,6 @@ CELL:
   print OUTC "\n";
 }                                       # GENE
 
-$sout   =~ s/(\.)\w+$/\.sout/;
 open (SOUT, "> $sout") || die "$sout: $!";
 print SOUT "number of reads: $nreads\n";
 print SOUT "number of mapped reads: $tot_map_reads\n";
