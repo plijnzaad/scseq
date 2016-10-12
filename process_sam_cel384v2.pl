@@ -112,8 +112,6 @@ print OUTB "\n";
 print OUTC "\n";
 print OUTT "\n";	
 
-
-
 GENE:
 foreach $gene (sort @genes){
   print OUTB $gene;
@@ -126,10 +124,9 @@ CELL:
   UMI:
     foreach $umi (keys %{$tc{$gene}{$cbc}}){
       next UMI if ($umi =~ /N/i);        # @@@ keep count of these, for stat purposes
-      if ($tc{$gene}{$cbc}{$umi} > 0.1){ # PL??
-        $n++;
-      }	
-      $rc = $rc + $tc{$gene}{$cbc}{$umi}; # total reads for this gene+cell
+      my $reads=$tc{$gene}{$cbc}{$umi};
+      $n += ($reads > 0);
+      $rc = $rc + $reads; # total reads for this gene+cell
     }                                   # UMI
     $trc += $rc; 
     $n = $n - 0.5 if ($n == $bn); # saturation correction @@@ again: keep count of this
