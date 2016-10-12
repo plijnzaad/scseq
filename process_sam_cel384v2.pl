@@ -1,12 +1,18 @@
 #!/usr/bin/perl -w -s
-use Carp;
-use strict;
 use tools;
+
+use strict;
+
+use Carp;
+use File::Basename;
+
+my ($script,$path) = fileparse($0);
+warn "Running $0\n";
 
 our ($sam, $barfile, $rb_len, $cbc_len);
 
 if ( !($sam && $barfile && $rb_len && $cbc_len) ) { 
-  die "usage: $0 -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH";
+  die "Usage: $script -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH";
 }
 
 my @cells = ();
@@ -14,10 +20,6 @@ my %bar = ();
 my %tc = ();
 
 # open barcode file, read all 384 barcodes
-my $log = $sam;
-$log   =~ s/(\.)\w+$/\.log/;
-open(LOG, ">", $log) || die "$log: $!";
-print LOG "Process sam started\n";
 
 open(IN,"<",$barfile) || die "$barfile:$!";
 while(<IN>){   # lines look like ^10 \t GTCGTTCC$ Better use strings for barcode ids!!
@@ -45,7 +47,7 @@ while( <IN> ) {
   }
 
   if (substr($_,1,2) eq "PG" ){
-    print LOG "$_";                 # PL:should check if it contains bwa
+    warn "$script: found: $_";                 # PL:should check if it contains bwa
     next SAMLINE;
   }
 
@@ -80,10 +82,9 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
     }
   }  
   $nreads++;
-  print LOG int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
+  warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
 }                                       # SAMLINE
 close(IN);
-close(LOG);
 
 my $bn = 4 ** $rb_len;
 
