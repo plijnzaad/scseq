@@ -31,7 +31,6 @@ close(IN);
 my $nreads = 0;
 my $tot_map_reads=0;
 my $tot_map_reads_u=0;
-my $noBCtag=0;
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 
@@ -41,7 +40,7 @@ SAMLINE:
 while( <IN> ) {
   chomp $_;
 
-  if (substr($_,1,2) eq "SQ" ){     # PL: keep count
+  if (substr($_,1,2) eq "SQ" ){
     next SAMLINE;
   }
 
@@ -77,7 +76,7 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   if (exists $bar{$cbc}){
     if ($X0 == 1 && $FLAG != 16){       # flag==16: read is reverse strand, i.e. doesn't map properly
       $tc{$RNAME}{$cbc}{$UMI}++;
-      ## @@: only uniquely mapping reads are counted !
+      ## PL @@: only uniquely mapping reads are counted !
     }
   }  
   $nreads++;
@@ -138,7 +137,7 @@ CELL:
       $rc = $rc + $reads; # total reads for this gene+cell
     }                                   # UMI
     $trc += $rc; 
-    $n = $n - 0.5 if ($n == $bn); # saturation correction @@@ keep count of this?
+    $n = $n - 0.5 if ($n == $bn); # saturation correction PL: @@@ keep count of this?
     my $txpts=(-log(1 - ($n/$bn))*$bn); # binomial correction
 
     print OUTB "\t$n";
