@@ -49,7 +49,7 @@ while( <IN> ) {
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
   my $RBC=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC)
   my $UMI = substr($RBC,5,$rb_len);
-  my $cellbc = substr($RBC,(5+$rb_len), $cbc_len);
+  my $cbc = substr($RBC,(5+$rb_len), $cbc_len); # cell barcode
 
   $NM = "NA";
   $XA = "NA";
@@ -68,9 +68,9 @@ while( <IN> ) {
   if ($X0 == 1){
     $tot_map_reads_u++;
   }
-  if (exists $bar{$cellbc}){
+  if (exists $bar{$cbc}){
     if ($X0 == 1 && $FLAG != 16){       # flag==16: read is reverse strand, i.e. doesn't map properly
-      $tc{$RNAME}{$cellbc}{$UMI}++;
+      $tc{$RNAME}{$cbc}{$UMI}++;
     }
   }
   
@@ -79,7 +79,6 @@ while( <IN> ) {
 }                                       # SAMLINE
 close(IN);
 close(LOG);
-
 
 my $bn = 4 ** $rb_len;
 
@@ -104,14 +103,16 @@ print OUTB "GENEID";
 print OUTC "GENEID";
 print OUTT "GENEID";
 
-foreach $cell (@cells){
-  print OUTB "\t".$bar{$cell};
-  print OUTC "\t".$bar{$cell};
-  print OUTT "\t".$bar{$cell};
+foreach $cbc (@cells){
+  print OUTB "\t".$bar{$cbc};
+  print OUTC "\t".$bar{$cbc};
+  print OUTT "\t".$bar{$cbc};
 }	
 print OUTB "\n";
 print OUTC "\n";
 print OUTT "\n";	
+
+
 
 GENE:
 foreach $gene (sort @genes){
@@ -119,26 +120,24 @@ foreach $gene (sort @genes){
   print OUTT $gene;
   print OUTC $gene;
 CELL:
-  foreach $cell (@cells){
-    $n = 0;
-    $rc = 0;
-UMI:
-    foreach $umi (keys %{$tc{$gene}{$cell}}){
-      if ($umi =~ /N/i){
-        next UMI;
-      }
-      if ($tc{$gene}{$cell}{$umi} > 0.1){
+  foreach $cbc (@cells){
+    my $n = 0;                             # distinct UMIs for this gene+cell
+    my $rc = 0;                            # total reads for this gene+cell
+  UMI:
+    foreach $umi (keys %{$tc{$gene}{$cbc}}){
+      next UMI if ($umi =~ /N/i);        # @@@ keep count of these, for stat purposes
+      if ($tc{$gene}{$cbc}{$umi} > 0.1){ # PL??
         $n++;
       }	
-      $rc = $rc + $tc{$gene}{$cell}{$umi};
+      $rc = $rc + $tc{$gene}{$cbc}{$umi}; # total reads for this gene+cell
     }                                   # UMI
-    print OUTB "\t".$n;
-    if ($n == $bn) {
-      $n = $n - 0.5;
-    }
-    print OUTC "\t".$rc;
-    $trc = $trc + $rc; 
-    print OUTT "\t".(-log(1 - ($n/$bn))*$bn);
+    $trc += $rc; 
+    $n = $n - 0.5 if ($n == $bn); # saturation correction @@@ again: keep count of this
+    my $txpts=(-log(1 - ($n/$bn))*$bn);
+
+    print OUTB "\t$n";
+    print OUTC "\t$rc";
+    print OUTT "\t$txpts";
   }                                     # CELL
   print OUTT "\n";
   print OUTB "\n";
