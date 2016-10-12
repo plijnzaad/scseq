@@ -27,59 +27,39 @@ close(IN);
 
 $i = 0;
 $x = 1;
-$tot_map_reads = 0;
-$tot_map_reads_u = 0;
-
-#create variables to store the different components of the sam file for R1;
-$QNAME = ();
-$FLAG = ();
-$RNAME = ();
-$POS = ();
-$MAPQ = ();
-$CIGAR = ();
-$MRNM = ();
-$MPOS = ();
-$ISIZE = ();
-$SEQ = ();
-$QUAL = ();
-$NM = ();
-$XA = ();
-$X0 = ();
-$RBC = ();
-$UMI = "NA";
-@bar_map = ();
-%bar_map_h = ();
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 
-open(IN,"<",$sam) || "$sam:$!";
+open(IN,"<",$sam) || die "$sam: $!";
 SAMLINE:
 while( <IN> ) {
   chomp $_;
   $line1 = $_;
 
-  if (substr($line1,1,2) eq "SQ" ){
+  if (substr($line1,1,2) eq "SQ" ){     # PL: keep count
     next SAMLINE;
   }
   if (substr($line1,1,2) eq "PG" ){
-    print LOG "$line1";
+    print LOG "$line1";                 # PL:should check if it contains bwa
     next SAMLINE;
   }
 # here all the information is extracted from the sam-file line;
   @r1 = split(/\t/,$line1);
-  ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,$RBC)=@r1;
-  $cellbc = substr($RBC,($rb_len)+5,8);
-  $UMI = substr($RBC,5,$rb_len);
+  my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
+  my $RBC=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC)
+  my $UMI = substr($RBC,5,$rb_len);
+  my $cellbc = substr($RBC,(5+$rb_len), $cbc_len);
+
   $NM = "NA";
   $XA = "NA";
   $X0 = 0;
 
-  foreach $el (@r1){
+  foreach $el (@rest){
     ($dum,$dum,$NM) = split(/\:/,$el) if ($el =~ /^NM\:/);
     ($dum,$dum,$XA) = split(/\:/,$el) if ($el =~ /^XA\:/);
     ($dum,$dum,$X0) = split(/\:/,$el) if ($el =~ /^X0\:/);
-    
   }
+  ### print LOG "$QNAME-$NM-$XA-$X0\n";
   ## $X0 = number of locations to which the read maps
   if ($X0 > 0){
     $tot_map_reads++;
