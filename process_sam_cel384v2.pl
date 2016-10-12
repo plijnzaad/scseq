@@ -36,7 +36,11 @@ my $tot_map_reads_u=0;
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 
-open(IN,"<",$sam) || die "$sam: $!";
+my $cat = "cat ";
+my $samtools = "samtools";                    # alternative: sambamba, might be faster
+$cat = "$samtools view " if $sam =~ /\.bam$/;
+
+open(IN,"$cat $sam |") || die "$sam: $!";
 
 SAMLINE:
 while( <IN> ) {
@@ -84,7 +88,7 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   $nreads++;
   warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
 }                                       # SAMLINE
-close(IN);
+close(IN) || die "$cat $sam: $!";
 
 my $bn = 4 ** $rb_len;
 

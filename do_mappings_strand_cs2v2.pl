@@ -90,16 +90,17 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   check_filesize(file=>$sai, minsize=>1000);
   
   if ( $nsam == 0 ){
-    $str = "bwa samse -n $n $r $sai $cbc > $out.sam";
+    my $compress = "samtools view -h -b - ";
+    $str = "bwa samse -n $n $r $sai $cbc | $compress > $out.bam";
   }
   print $str."\n";
   execute(cmd=>$str) if ($test == 0);
-  check_filesize(file=>"$out.sam",minsize=>1000);
+  check_filesize(file=>"$out.bam",minsize=>1000);
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
   ## if ( $STRT ) # unknown, see before commit 61a2fce50246ce47 (2016-10-11 15:10:00)
-  $str = "process_sam_cel384v2.pl -sam=$out.sam -barfile=$bar -rb_len=$rb_len -cbc_len=$cbc_len";
+  $str = "process_sam_cel384v2.pl -sam=$out.bam -barfile=$bar -rb_len=$rb_len -cbc_len=$cbc_len";
   print $str."\n";
   execute(cmd=>$str, merge=>1) if ($test == 0);
 }                                       # if ( $npr == 0 || $npr == 2)
