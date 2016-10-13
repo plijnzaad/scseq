@@ -33,6 +33,7 @@ close(IN);
 my $nreads = 0;
 my $nreverse=0;
 my $numiN=0;
+my $mapped_numiN=0;
 my $nosuchCBC=0;
 
 my $nmapped=0;
@@ -147,12 +148,14 @@ CELL:
   UMI:
     foreach my $umi (keys %{$tc{$gene}{$cbc}}) {
       if ($umi =~ /N/i) { 
-        $numiN++;
+        $numiN ++;
+        my $mapped= ($gene eq 'unmapped' || $gene eq 'reverse');
+        $mapped_numiN += $mapped;
         next UMI;
       }
       my $reads=$tc{$gene}{$cbc}{$umi};
       $n += ($reads > 0);
-      $rc = $rc + $reads; # total reads for this gene+cell
+      $rc = $rc + $reads; # total valid (=uniquely mapped) reads for this gene+cell
     }                                   # UMI
     $trc += $rc; 
     $n = $n - 0.5 if ($n == $bn); # saturation correction PL: @@@ keep count of this?
@@ -177,11 +180,15 @@ open (SOUT, "> $sout") || die "$sout: $!";
 
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapped reads: ", stat_format($nunimapped, $nmapped);
-print SOUT "uniquely mapped reads with valid barcode: " , stat_format($trc, $nunimapped);
+print SOUT "uniquely mapped reads with valid barcode: " , stat_format($nunimapped, $nmapped);
+
+print SOUT "trc=$trc; nmapped=$nmapped; nunimapped=$nunimapped\n";  # trc == valid barcode?
+
 ## (original version used wrong ratio!)
 
 print SOUT "reverse mapped reads: " , stat_format($nreverse, $nmapped);
 print SOUT "UMI containing 'N': " , stat_format($numiN, $nreads);
+print SOUT "lost mapped read due to UMI containing 'N': " , stat_format($mapped_numiN, $nunimapped);
 print SOUT "invalid cbc : " , stat_format($nosuchCBC, $nreads);
 
 close SOUT;
