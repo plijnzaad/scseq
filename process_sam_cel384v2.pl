@@ -34,7 +34,9 @@ my $nreads = 0;
 my $nreverse=0;
 my $numiN=0;
 my $mapped_numiN=0;
+
 my $nosuchCBC=0;
+my $mapped_nosuchCBC=0;
 
 my $nmapped=0;
 my $nunimapped=0;
@@ -87,12 +89,16 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
 
   if (exists $bar{$cbc}){
     if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
-      $tc{$RNAME}{$cbc}{$UMI}++; # PL @@: only uniquely mapping reads are counted !?
+      $tc{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
+    } else { 
+      $tc{'#IGNORED'}{$cbc}{$UMI} ++;
+      $tc{'#unmapped'}{$cbc}{$UMI} += ($X0 == 0 );
+      $tc{'#multimapped'}{$cbc}{$UMI} += ($X0 > 1 );
+      $tc{'#reverse'}{$cbc}{$UMI} += ($FLAG != 16);
     }
-    $tc{'unmapped'}{$cbc}{$UMI} += ($X0 == 0 );
-    $tc{'reverse'}{$cbc}{$UMI} += ($FLAG != 16);
   } else { 
     $nosuchCBC++;
+    $mapped_nosuchCBC += ($X0 > 0);
   } 
   $nreads++;
   warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
@@ -137,7 +143,7 @@ my $trc = 0;
 ## print read counts, umi counts and transcript counts
 
 GENE:
-foreach my $gene ('unmapped', 'reverse', sort @genes) {
+foreach my $gene (sort @genes) {
   print OUTB $gene;
   print OUTT $gene;
   print OUTC $gene;
@@ -147,24 +153,23 @@ CELL:
     my $rc = 0;                            # total reads for this gene+cell
   UMI:
     foreach my $umi (keys %{$tc{$gene}{$cbc}}) {
-      if ($umi =~ /N/i) { 
-        $numiN ++;
-        my $mapped= ($gene eq 'unmapped' || $gene eq 'reverse');
-        $mapped_numiN += $mapped;
+      if ($umi =~ /N/i) {
+        $numiN ++;                 # still a small counting error here ...
+        my $unmapped= ($gene eq '#unmapped' || $gene eq '#reverse');
+        $mapped_numiN += !$unmapped;
         next UMI;
       }
       my $reads=$tc{$gene}{$cbc}{$umi};
       $n += ($reads > 0);
-      $rc = $rc + $reads; # total valid (=uniquely mapped) reads for this gene+cell
+      $rc += $reads; # total valid (=uniquely mapped) reads for this gene+cell
     }                                   # UMI
-    $trc += $rc; 
+    $trc += $rc unless $gene =~ /^#/;      # virtual genes such as '#unmapped';
     $n = $n - 0.5 if ($n == $bn); # saturation correction PL: @@@ keep count of this?
     my $txpts=(-log(1 - ($n/$bn))*$bn); # binomial correction
 
     print OUTB "\t$n";
     print OUTC "\t$rc";
     print OUTT "\t$txpts";
-    
   }                                     # CELL
   print OUTT "\n";
   print OUTB "\n";
@@ -179,16 +184,13 @@ sub stat_format {
 open (SOUT, "> $sout") || die "$sout: $!";
 
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
-print SOUT "uniquely mapped reads: ", stat_format($nunimapped, $nmapped);
-print SOUT "uniquely mapped reads with valid barcode: " , stat_format($nunimapped, $nmapped);
+print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
+print SOUT "uniquely with valid barcode: " , stat_format($trc, $nreads);
 
-print SOUT "trc=$trc; nmapped=$nmapped; nunimapped=$nunimapped\n";  # trc == valid barcode?
-
-## (original version used wrong ratio!)
-
-print SOUT "reverse mapped reads: " , stat_format($nreverse, $nmapped);
+print SOUT "reverse mapped reads: " , stat_format($nreverse, $nreads);
 print SOUT "UMI containing 'N': " , stat_format($numiN, $nreads);
 print SOUT "lost mapped read due to UMI containing 'N': " , stat_format($mapped_numiN, $nunimapped);
-print SOUT "invalid cbc : " , stat_format($nosuchCBC, $nreads);
+print SOUT "invalid CBC: " , stat_format($nosuchCBC, $nreads);
+print SOUT "mapped read, but invalid CBC: " , stat_format($mapped_nosuchCBC, $nunimapped);
 
 close SOUT;
