@@ -31,8 +31,12 @@ while(<IN>){   # lines look like ^10 \t GTCGTTCC$ Better use strings for barcode
 close(IN);
 
 my $nreads = 0;
-my $tot_map_reads=0;
-my $tot_map_reads_u=0;
+my $nreverse=0;
+my $numiN=0;
+my $nosuchCBC=0;
+
+my $nmapped=0;
+my $nunimapped=0;
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 
@@ -76,15 +80,19 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
     ($dum,$dum,$X0) = split(":",$el) if ($el =~ /^X0\:/); # X0: number of best hits
   }
   
-  $tot_map_reads += ($X0 > 0); # $X0 is number of locations to which the read maps
-  $tot_map_reads_u += ($X0 == 1);
+  $nmapped += ($X0 > 0); # $X0 is number of locations to which the read maps
+  $nunimapped += ($X0 == 1);
+  $nreverse += ($FLAG == 16);
 
   if (exists $bar{$cbc}){
-    if ($X0 == 1 && $FLAG != 16){       # flag==16: read is reverse strand, i.e. doesn't map properly
-      $tc{$RNAME}{$cbc}{$UMI}++;
-      ## PL @@: only uniquely mapping reads are counted !
+    if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
+      $tc{$RNAME}{$cbc}{$UMI}++; # PL @@: only uniquely mapping reads are counted !?
     }
-  }  
+    $tc{'unmapped'}{$cbc}{$UMI} += ($X0 == 0 );
+    $tc{'reverse'}{$cbc}{$UMI} += ($FLAG != 16);
+  } else { 
+    $nosuchCBC++;
+  } 
   $nreads++;
   warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
 }                                       # SAMLINE
@@ -125,8 +133,10 @@ print OUTT "\n";
 
 my $trc = 0;
 
+## print read counts, umi counts and transcript counts
+
 GENE:
-foreach my $gene (sort @genes){
+foreach my $gene ('unmapped', 'reverse', sort @genes) {
   print OUTB $gene;
   print OUTT $gene;
   print OUTC $gene;
@@ -136,7 +146,10 @@ CELL:
     my $rc = 0;                            # total reads for this gene+cell
   UMI:
     foreach my $umi (keys %{$tc{$gene}{$cbc}}) {
-      next UMI if ($umi =~ /N/i);
+      if ($umi =~ /N/i) { 
+        $numiN++;
+        next UMI;
+      }
       my $reads=$tc{$gene}{$cbc}{$umi};
       $n += ($reads > 0);
       $rc = $rc + $reads; # total reads for this gene+cell
@@ -162,9 +175,13 @@ sub stat_format {
 
 open (SOUT, "> $sout") || die "$sout: $!";
 
-print SOUT "number of reads: " , stat_format($tot_map_reads, $nreads);
-print SOUT "uniquely mapped reads: ", stat_format($tot_map_reads_u, $nreads);
-print SOUT "uniquely mapped reads with valid barcode: " , stat_format($trc, $tot_map_reads_u);
+print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
+print SOUT "uniquely mapped reads: ", stat_format($nunimapped, $nmapped);
+print SOUT "uniquely mapped reads with valid barcode: " , stat_format($trc, $nunimapped);
 ## (original version used wrong ratio!)
+
+print SOUT "reverse mapped reads: " , stat_format($nreverse, $nmapped);
+print SOUT "UMI containing 'N': " , stat_format($numiN, $nreads);
+print SOUT "invalid cbc : " , stat_format($nosuchCBC, $nreads);
 
 close SOUT;
