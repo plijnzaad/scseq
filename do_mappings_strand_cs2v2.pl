@@ -84,7 +84,8 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   }
 
   $B = $BR;
-  $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc > $sai";
+  my $other_args=" -q $q -n $aln_n -k $aln_k -l $l ";
+  $str = "bwa aln -B $B -t $t $other_args $r $cbc > $sai";
   print $str."\n";
   execute(cmd=>$str, merge=>0) if ($test == 0);
   check_filesize(file=>$sai, minsize=>1000);
