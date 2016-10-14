@@ -192,4 +192,9 @@ print SOUT "mapped read, but invalid CBC: " , stat_format($nmapped_invalidCBC, $
 print SOUT "total reads = unique&valid + ignored + invalidCBC + invalidUMI:\n" 
     .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $ninvalidCBC, $ninvalidUMI);
 
+$nreads /= 100;
+print SOUT "%% unique&valid + ignored + invalidCBC + invalidUMI:\n" 
+    .     sprintf("100%% = %.1f + %.1f + %.1f + %.1f\n", 
+                  $trc/$nreads, $nignored/$nreads, $ninvalidCBC/$nreads, $ninvalidUMI/$nreads);
+
 close SOUT;
