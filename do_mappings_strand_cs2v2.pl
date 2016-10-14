@@ -10,6 +10,7 @@ if (!($r && $f1 && $out && $t)){
                  -f1=READ1    \
                  -f2=READ2 (optional)    \
                  -out=OUTPUT_PREFIX    \
+                 -bwa_params='...' (optional, overrides the -q -n -k -l options) \
                  -outdir=OUTPUT_DIRECTORY (optional)    \
                  -t=THREADS  (0)  \
                  -ind=is or bwtsw (default: is (<2GB reference)    \
@@ -17,7 +18,7 @@ if (!($r && $f1 && $out && $t)){
                  -aln_n=edit distance  (bwa aln option -n, default 0.04)  \
                  -aln_k=edit distance in seed  (bwa aln option -k, default 2)   \
                  -l=SEED_LENGTH  (bwa -l option)  \
-                 -BR=barcode length right read (bwa aln option -B, default 0)   \
+                 -BR=barcode length (bwa aln option -B, default 0)   \
                  -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
                  -npr=0,1,2: 0: map and process; 1: only map ; 2: only process
                  -nsam= 0 or 1 (1: do *not* produce new sam file (calls bwa samse/sampe)    \
@@ -31,8 +32,11 @@ if (!($r && $f1 && $out && $t)){
 # hard coded:
 $n = 100; # maximal number of unpaired reads to output in XA tag
 $N = 100; # maximal number of paired reads to output in XA tag
+
 $q = 0 if !$q; # base quality cutoff for trimming
 $l = 200 if !$l; # seed length
+
+
 $i = 0 if !$i; # create index
 $BR = 0 if !$BR;
 $npr  = 0 if !$npr;
@@ -45,6 +49,8 @@ $BR = $cbc_len+$rb_len;
 
 $aln_n = 0.04 if !$aln_n; # edit distance
 $aln_k = 2 if !$aln_k; # edit distance in seed
+
+$bwa_params=" -q $q -n $aln_n -k $aln_k -l $l " unless $bwaparams;
 
 $test = 0 if !$test;
 if ($outdir){
@@ -84,8 +90,8 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   }
 
   $B = $BR;
-  my $other_args=" -q $q -n $aln_n -k $aln_k -l $l ";
-  $str = "bwa aln -B $B -t $t $other_args $r $cbc > $sai";
+  $str = "bwa aln -B $B -t $t $bwa_params $r $cbc > $sai";
+##  $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc > $sai";
   print $str."\n";
   execute(cmd=>$str, merge=>0) if ($test == 0);
   check_filesize(file=>$sai, minsize=>1000);
