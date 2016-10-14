@@ -32,11 +32,11 @@ close(IN);
 
 my $nreads = 0;
 my $nreverse=0;
-my $numiN=0;
-my $mapped_numiN=0;
+my $ninvalidUMI=0;
+my $nignored=0;
 
-my $nosuchCBC=0;
-my $mapped_nosuchCBC=0;
+my $ninvalidCBC=0;
+my $nmapped_invalidCBC=0;
 
 my $nmapped=0;
 my $nunimapped=0;
@@ -90,15 +90,17 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   if (exists $bar{$cbc}){
     if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
       $tc{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
-    } else { 
+      # note: invalid umi's are filtered out later!
+    } else {
+      $nignored++;
       $tc{'#IGNORED'}{$cbc}{$UMI} ++;
       $tc{'#unmapped'}{$cbc}{$UMI} += ($X0 == 0 );
       $tc{'#multimapped'}{$cbc}{$UMI} += ($X0 > 1 );
       $tc{'#reverse'}{$cbc}{$UMI} += ($FLAG != 16);
     }
   } else { 
-    $nosuchCBC++;
-    $mapped_nosuchCBC += ($X0 > 0);
+    $ninvalidCBC++;
+    $nmapped_invalidCBC += ($X0 > 0);
   } 
   $nreads++;
   warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
@@ -153,10 +155,8 @@ CELL:
     my $rc = 0;                            # total reads for this gene+cell
   UMI:
     foreach my $umi (keys %{$tc{$gene}{$cbc}}) {
-      if ($umi =~ /N/i) {
-        $numiN ++;                 # still a small counting error here ...
-        my $unmapped= ($gene eq '#unmapped' || $gene eq '#reverse');
-        $mapped_numiN += !$unmapped;
+      if ($umi =~ /N/i  && $gene !~ /#/) { 
+        $ninvalidUMI ++ ;
         next UMI;
       }
       my $reads=$tc{$gene}{$cbc}{$umi};
@@ -185,12 +185,11 @@ open (SOUT, "> $sout") || die "$sout: $!";
 
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
-print SOUT "uniquely with valid barcode: " , stat_format($trc, $nreads);
-
-print SOUT "reverse mapped reads: " , stat_format($nreverse, $nreads);
-print SOUT "UMI containing 'N': " , stat_format($numiN, $nreads);
-print SOUT "lost mapped read due to UMI containing 'N': " , stat_format($mapped_numiN, $nunimapped);
-print SOUT "invalid CBC: " , stat_format($nosuchCBC, $nreads);
-print SOUT "mapped read, but invalid CBC: " , stat_format($mapped_nosuchCBC, $nunimapped);
+print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
+print SOUT "valid barcode, invalid UMI: " , stat_format($ninvalidUMI, $nreads);
+print SOUT "invalid CBC: " , stat_format($ninvalidCBC, $nreads);
+print SOUT "mapped read, but invalid CBC: " , stat_format($nmapped_invalidCBC, $nunimapped);
+print SOUT "total reads = unique&valid + ignored + invalidCBC + invalidUMI:\n" 
+    .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $ninvalidCBC, $ninvalidUMI);
 
 close SOUT;
