@@ -10,7 +10,7 @@ if (!($r && $f1 && $out && $t)){
                  -f1=READ1    \
                  -f2=READ2 (optional)    \
                  -out=OUTPUT_PREFIX    \
-                 -bwa_params='...' (optional, overrides the -q -n -k -l options) \
+                 -bwaparams='...' (optional, overrides the -q -n -k -l options) \
                  -outdir=OUTPUT_DIRECTORY (optional)    \
                  -t=THREADS  (0)  \
                  -ind=is or bwtsw (default: is (<2GB reference)    \
@@ -50,7 +50,7 @@ $BR = $cbc_len+$rb_len;
 $aln_n = 0.04 if !$aln_n; # edit distance
 $aln_k = 2 if !$aln_k; # edit distance in seed
 
-$bwa_params=" -q $q -n $aln_n -k $aln_k -l $l " unless $bwaparams;
+$bwaparams=" -q $q -n $aln_n -k $aln_k -l $l " unless $bwaparams;
 
 $test = 0 if !$test;
 if ($outdir){
@@ -90,7 +90,7 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   }
 
   $B = $BR;
-  $str = "bwa aln -B $B -t $t $bwa_params $r $cbc > $sai";
+  $str = "bwa aln -B $B -t $t $bwaparams $r $cbc > $sai";
 ##  $str = "bwa aln -B $B -q $q -n $aln_n -k $aln_k -l $l -t $t $r $cbc > $sai";
   print $str."\n";
   execute(cmd=>$str, merge=>0) if ($test == 0);
