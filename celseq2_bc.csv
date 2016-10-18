@@ -1,3 +1,17 @@
+## comments in this file are ignored
+## two columns (space or tab-delimited) specify the barcode id and the bardcode itself
+## a lower case letter in the barcode means: this letter must *always* be exact.
+## This can be used if some barcodes are not different enough from the other
+## to allow a fixed number of mismatches.
+## In the current file, there is a one nucleotide difference between the following barcodes:
+##
+## c182 CAGATAcC <-> c217 CAGATAgC
+## c133 CAGTGaCA <-> c336 CAGTGtCA
+## c106 CATcTCAC <-> c203 CATgTCAC
+## c127 GGcGATTT <-> c306 GGgGATTT
+## 
+## In order to allow a 1-mismatch 'demultiplexing', these nucleotides have therefore been lowercased
+## Philip Lijnzaad, 18okt2016
 c1	CGTCTAAT
 c2	AGACTCGT
 c3	GCACGTCA
@@ -103,7 +117,7 @@ c102	TACTGCTG
 c103	CTGACTGT
 c104	CAGCGATT
 c105	GTTCGCTA
-c106	CATCTCAC
+c106	CATcTCAC
 c107	TCTGCCTA
 c108	CTGGCTAA
 c109	GATTGCTC
@@ -124,13 +138,13 @@ c123	TCCTAGCT
 c124	GGTTCTGA
 c125	ACGTACTG
 c126	GTGAACTC
-c127	GGCGATTT
+c127	GGcGATTT
 c128	AATCGGCA
 c129	GCGTATAG
 c130	CCGATTCT
 c131	CTATAGGC
 c132	CTTGTGCA
-c133	CAGTGACA
+c133	CAGTGaCA
 c134	ACGCTCTT
 c135	ATAGGAGC
 c136	GTTCTGCT
@@ -179,7 +193,7 @@ c178	TATCCTGC
 c179	CCTTCGTA
 c180	CAAAGTGG
 c181	GTCTCACA
-c182	CAGATACC
+c182	CAGATAcC
 c183	CCTACACA
 c184	AGCAGAAC
 c185	TTTGAGGG
@@ -200,7 +214,7 @@ c199	TCTGTGAG
 c200	ACCACGAT
 c201	GGCTCTAT
 c202	TACTGCAC
-c203	CATGTCAC
+c203	CATgTCAC
 c204	AAGGAGCA
 c205	AACCGCTT
 c206	CAACCATG
@@ -214,7 +228,7 @@ c213	GCTTCTTC
 c214	TGGTGAGT
 c215	CACTATCC
 c216	GTAATCCG
-c217	CAGATAGC
+c217	CAGATAgC
 c218	CCGTCTAA
 c219	TACCTGTC
 c220	TATTCGGG
@@ -303,7 +317,7 @@ c302	AGTACGTG
 c303	AGAGGTGA
 c304	GGGAAGAT
 c305	CCAACGTT
-c306	GGGGATTT
+c306	GGgGATTT
 c307	GGCAACAA
 c308	CAGTCAGA
 c309	CGAAAGCT
@@ -333,7 +347,7 @@ c332	GTCTTACC
 c333	AGACAACC
 c334	TGGCTTCA
 c335	AGCTTCAC
-c336	CAGTGTCA
+c336	CAGTGtCA
 c337	GTTATGCC
 c338	CGAACTGT
 c339	GATCCTGA
