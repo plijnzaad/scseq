@@ -9,26 +9,26 @@ use File::Basename;
 my ($script,$path) = fileparse($0);
 warn "Running $0\n";
 
-our ($sam, $barfile, $rb_len, $cbc_len);
+our ($sam, $barfile, $rb_len, $cbc_len, $allow_mm);
 
 if ( !($sam && $barfile && $rb_len && $cbc_len) ) { 
-  die "Usage: $script -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH";
+  die "Usage: $script -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH [ -allow_mm=1] ";
 }
 
-my @cells = ();
-my %bar = ();
-my %tc = ();
+my $tc = {};
 
-# open barcode file, read all 384 barcodes
+my $barcodes = mismatch::readbarcodes($barfile); ## eg. $h->{'AGCGTT') => 'M3'
+my $uppercase_codes = {}; 
+for my $code ( keys %$barcodes ) { $uppercase_codes->{"\U$code"}=$barcodes->{$code}}
 
-open(IN,"<",$barfile) || die "$barfile:$!";
-while(<IN>){   # lines look like ^10 \t GTCGTTCC$ Better use strings for barcode ids!!
-  chomp;
-  my($id,$barcode) = split("\t",$_);
-  $bar{$barcode} = $id;                 # e.g. $bar{'GTCGTTCC'}=> 10 . 
-  push(@cells, $barcode);
+my @cells = map { "\U$_" } sort keys %$barcodes;
+
+my $mismatch_REs=undef;
+
+if ($allow_mm) { 
+  use mismatch;
+  $mismatch_REs = mismatch::convert2mismatchREs(barcodes=>$barcodes, allowed_mismatches =>$allow_mm);
 }
-close(IN);
 
 my $nreads = 0;
 my $nreverse=0;
@@ -37,6 +37,7 @@ my $nignored=0;
 
 my $ninvalidCBC=0;
 my $nmapped_invalidCBC=0;
+my $nrescued_invalidCBC=0;
 
 my $nmapped=0;
 my $nunimapped=0;
@@ -87,16 +88,20 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   $nunimapped += ($X0 == 1);
   $nreverse += ($FLAG == 16);
 
-  if (exists $bar{$cbc}){
+  if (! exists $uppercase_codes->{$cbc} && $allow_mm) { 
+    $cbc=rescue($cbc, $barcodes, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
+    $nrescued_invalidCBC += defined($cbc);
+  }
+  if (exists $barcodes->{$cbc}){
     if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
-      $tc{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
+      $tc->{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
       # note: invalid umi's are filtered out later!
     } else {
       $nignored++;
-      $tc{'#IGNORED'}{$cbc}{$UMI} ++;
-      $tc{'#unmapped'}{$cbc}{$UMI} += ($X0 == 0 );
-      $tc{'#multimapped'}{$cbc}{$UMI} += ($X0 > 1 );
-      $tc{'#reverse'}{$cbc}{$UMI} += ($FLAG != 16);
+      $tc->{'#IGNORED'}{$cbc}{$UMI} ++;
+      $tc->{'#unmapped'}{$cbc}{$UMI} += ($X0 == 0 );
+      $tc->{'#multimapped'}{$cbc}{$UMI} += ($X0 > 1 );
+      $tc->{'#reverse'}{$cbc}{$UMI} += ($FLAG != 16);
     }
   } else { 
     $ninvalidCBC++;
@@ -108,10 +113,6 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
 close(IN) || die "$cat $sam: $!";
 
 my $bn = 4 ** $rb_len;
-
-# create a gene array to loop through while writing the data frame;
-
-my @genes = keys %tc;
 
 my $coutt = $sam;
 my $coutb = $sam;
@@ -132,9 +133,10 @@ print OUTC "GENEID";
 print OUTT "GENEID";
 
 foreach my $cbc (@cells){
-  print OUTB "\t".$bar{$cbc};
-  print OUTC "\t".$bar{$cbc};
-  print OUTT "\t".$bar{$cbc};
+  my $id=$barcodes->{$cbc};
+  print OUTB "\t$id";
+  print OUTC "\t$id";
+  print OUTT "\t$id";
 }	
 print OUTB "\n";
 print OUTC "\n";
@@ -145,7 +147,7 @@ my $trc = 0;
 ## print read counts, umi counts and transcript counts
 
 GENE:
-foreach my $gene (sort @genes) {
+foreach my $gene (sort keys %$tc) {
   print OUTB $gene;
   print OUTT $gene;
   print OUTC $gene;
@@ -154,12 +156,12 @@ CELL:
     my $n = 0;                             # distinct UMIs for this gene+cell
     my $rc = 0;                            # total reads for this gene+cell
   UMI:
-    foreach my $umi (keys %{$tc{$gene}{$cbc}}) {
+    foreach my $umi (keys %{$tc->{$gene}{$cbc}}) {
       if ($umi =~ /N/i  && $gene !~ /#/) { 
         $ninvalidUMI ++ ;
         next UMI;
       }
-      my $reads=$tc{$gene}{$cbc}{$umi};
+      my $reads=$tc->{$gene}{$cbc}{$umi};
       $n += ($reads > 0);
       $rc += $reads; # total valid (=uniquely mapped) reads for this gene+cell
     }                                   # UMI
@@ -188,6 +190,7 @@ print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
 print SOUT "valid barcode, invalid UMI: " , stat_format($ninvalidUMI, $nreads);
 print SOUT "invalid CBC: " , stat_format($ninvalidCBC, $nreads);
+print SOUT "rescued invalid CBC: " , stat_format($ninvalidCBC, $nreads);
 print SOUT "mapped read, but invalid CBC: " , stat_format($nmapped_invalidCBC, $nunimapped);
 print SOUT "total reads = unique&valid + ignored + invalidCBC + invalidUMI:\n" 
     .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $ninvalidCBC, $ninvalidUMI);
