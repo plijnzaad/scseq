@@ -25,7 +25,8 @@ sub bycode {                            # sort the barcodes by their ids
   my ($aa,$bb) = ($a,$b);
   $aa=$barcodes->{$aa}; $aa =~ s/[A-Za-z_]//g;
   $bb=$barcodes->{$bb}; $bb =~ s/[A-Za-z_]//g; 
-$aa <=> $bb;}
+  $aa <=> $bb;
+}
 
 my @cells = sort bycode (keys %$barcodes) ;
 ### @cells contains bar codes, but sorted by their id's (e.g. c1, c2, ... )
@@ -99,7 +100,7 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
     $cbc=rescue($cbc, $barcodes, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
     $nrescued_invalidCBC += defined($cbc);
   }
-  if (exists $barcodes->{$cbc}){
+  if (exists $uppercase_codes->{$cbc}){
     if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
       $tc->{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
       # note: invalid umi's are filtered out later!
@@ -196,8 +197,8 @@ print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
 print SOUT "valid barcode, invalid UMI: " , stat_format($ninvalidUMI, $nreads);
+print SOUT "rescued invalid CBC: " , stat_format($nrescued_invalidCBC, $nreads);
 print SOUT "invalid CBC: " , stat_format($ninvalidCBC, $nreads);
-print SOUT "rescued invalid CBC: " , stat_format($ninvalidCBC, $nreads);
 print SOUT "mapped read, but invalid CBC: " , stat_format($nmapped_invalidCBC, $nunimapped);
 print SOUT "total reads = unique&valid + ignored + invalidCBC + invalidUMI:\n" 
     .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $ninvalidCBC, $ninvalidUMI);
