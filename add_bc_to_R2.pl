@@ -5,7 +5,7 @@
 ## to stdout.
 
 if (!($fastq)){
-  die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  -cbc_len=8 > s_cbc.fastq ";
+  die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  -cbc_len=8 [ -A=10 -C=12 -T=18 -G=14 ] > s_cbc.fastq ";
 }
 
 die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
@@ -15,6 +15,12 @@ my $prefix_len = $cbc_len + $rb_len;
 my $barcode_quality='F';                # i.e. 37
 ## if the quality is too low, bwa makes the BC:Z:<barcodesequence> all lowercase,
 ## and it is not mapped anyway due to -B N flag.
+
+my $A_regexp= 'A' x $opt_A;
+my $C_regexp= 'C' x $opt_C;
+my $G_regexp= 'G' x $opt_G;
+my $T_regexp= 'T' x $opt_T;
+
 
 @fastq = split(/\,/,$fastq);
 
@@ -29,29 +35,29 @@ $i = 0;
 
 LINE:
 while( not eof $IN1 and not eof $IN2) {
-	$line1 = <$IN1>;
-	$line2 = <$IN2>; 
-	if ($i == 0){                   # id-line
-		print  $line2;
-		$i++;
-		next LINE;
-	}
-	if ($i == 1){                   # sequence line
-		$bar = substr($line1, 0, $prefix_len);
-		print  "$bar$line2";
-		$i++;
-		next LINE;
-	}
-	if ($i == 2){                   # the '+'-line
-		print $line2;
-		$i++;
-		next LINE;
-	}
-	if ($i == 3){                   # line with Phred qualities
-          my $qual= $barcode_quality  x $prefix_len;
-		print  "$qual$line2";
-		$i = 0;
-	}
+  $line1 = <$IN1>;
+  $line2 = <$IN2>; 
+  if ($i == 0){                   # id-line
+    print  $line2;
+    $i++;
+    next LINE;
+  }
+  if ($i == 1){                   # sequence line
+    $bar = substr($line1, 0, $prefix_len);
+    print  "$bar$line2";
+    $i++;
+    next LINE;
+  }
+  if ($i == 2){                   # the '+'-line
+    print $line2;
+    $i++;
+    next LINE;
+  }
+  if ($i == 3){                   # line with Phred qualities
+    my $qual= $barcode_quality  x $prefix_len;
+    print  "$qual$line2";
+    $i = 0;
+  }
 }                                       # LINE
 
 close $IN1 || die "$fastq[0]: $!";
