@@ -95,10 +95,10 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   $nreverse += ($FLAG == 16);
 
   if (! exists $barcodes->{$cbc} && $allow_mm) { 
-    $cbc=rescue($cbc, $barcodes, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
+    $cbc=mismatch::rescue($cbc, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
     $nrescued_invalidCBC += defined($cbc);
-  }
-  if (exists $barcodes->{$cbc}){
+  } 
+  if ($cbc && exists $barcodes->{$cbc}){
     if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
       $tc->{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
       # note: invalid umi's are filtered out later!
