@@ -6,6 +6,8 @@ use strict;
 use Carp;
 use File::Basename;
 
+use mismatch;
+
 my ($script,$path) = fileparse($0);
 warn "Running $0\n";
 
@@ -15,11 +17,8 @@ if ( !($sam && $barfile && $rb_len && $cbc_len) ) {
   die "Usage: $script -sam=sam.sam -barfile=barfile.csv -rb_len=UMILENGTH -cbc_len=CBCLENGTH [ -allow_mm=1] ";
 }
 
-my $tc = {};
-
-my $barcodes = mismatch::readbarcodes($barfile); ## eg. $h->{'AGCGTT') => 'M3'
-my $uppercase_codes = {}; 
-for my $code ( keys %$barcodes ) { $uppercase_codes->{"\U$code"}=$barcodes->{$code}}
+my $barcodes_mixedcase = mismatch::readbarcodes_mixedcase($barfile); ## eg. $h->{'AGCGtT') => 'M3'
+my $barcodes = mismatch::mixedcase2upper($barcodes_mixedcase);     ## e.g. $h->{'AGCGTT') => 'M3'
 
 sub bycode {                            # sort the barcodes by their ids
   my ($aa,$bb) = ($a,$b);
@@ -27,16 +26,14 @@ sub bycode {                            # sort the barcodes by their ids
   $bb=$barcodes->{$bb}; $bb =~ s/[A-Za-z_]//g; 
   $aa <=> $bb;
 }
-
-my @cells = sort bycode (keys %$barcodes) ;
-### @cells contains bar codes, but sorted by their id's (e.g. c1, c2, ... )
+my @cells = sort bycode (keys %$barcodes); # @cells bar codes sorted by their id's (e.g. c1, c2, ... )
 
 my $mismatch_REs=undef;
 
 if ($allow_mm) { 
-  use mismatch;
-  $mismatch_REs = mismatch::convert2mismatchREs(barcodes=>$barcodes, allowed_mismatches =>$allow_mm);
+  $mismatch_REs = mismatch::convert2mismatchREs(barcodes=>$barcodes_mixedcase, allowed_mismatches =>$allow_mm);
 }
+$barcodes_mixedcase=undef;
 
 my $nreads = 0;
 my $nreverse=0;
@@ -50,8 +47,9 @@ my $nrescued_invalidCBC=0;
 my $nmapped=0;
 my $nunimapped=0;
 
-# read through sam file create a hash with all genes and cells and extract mapped reads into the hash
+my $tc = {};
 
+# read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 my $cat = "cat ";
 my $samtools = "samtools";                    # alternative: sambamba, might be faster
 $cat = "$samtools view " if $sam =~ /\.bam$/;
@@ -96,11 +94,11 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   $nunimapped += ($X0 == 1);
   $nreverse += ($FLAG == 16);
 
-  if (! exists $uppercase_codes->{$cbc} && $allow_mm) { 
+  if (! exists $barcodes->{$cbc} && $allow_mm) { 
     $cbc=rescue($cbc, $barcodes, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
     $nrescued_invalidCBC += defined($cbc);
   }
-  if (exists $uppercase_codes->{$cbc}){
+  if (exists $barcodes->{$cbc}){
     if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
       $tc->{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
       # note: invalid umi's are filtered out later!
