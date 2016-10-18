@@ -21,7 +21,14 @@ my $barcodes = mismatch::readbarcodes($barfile); ## eg. $h->{'AGCGTT') => 'M3'
 my $uppercase_codes = {}; 
 for my $code ( keys %$barcodes ) { $uppercase_codes->{"\U$code"}=$barcodes->{$code}}
 
-my @cells = map { "\U$_" } sort keys %$barcodes;
+sub bycode {                            # sort the barcodes by their ids
+  my ($aa,$bb) = ($a,$b);
+  $aa=$barcodes->{$aa}; $aa =~ s/[A-Za-z_]//g;
+  $bb=$barcodes->{$bb}; $bb =~ s/[A-Za-z_]//g; 
+$aa <=> $bb;}
+
+my @cells = sort bycode (keys %$barcodes) ;
+### @cells contains bar codes, but sorted by their id's (e.g. c1, c2, ... )
 
 my $mismatch_REs=undef;
 
