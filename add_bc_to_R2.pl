@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w -s
 ## In CELSeq2, read1 contains (in order) CBC, UMI, polyT, and read2 contains
 ## the mRNA (starts of fragments). 
-## This script puts the CBC and UMI from read1 in front of read2
-## 
+## This script puts the CBC and UMI from read1 in front of read2 and prints it
+## to stdout.
 
 if (!($fastq)){
   die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  -cbc_len=8 > s_cbc.fastq ";
