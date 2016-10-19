@@ -17,7 +17,7 @@ use strict;
 our($fastq, $rb_len, $cbc_len, $trim);
 
 if (!($fastq)){
-  die "usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [ -trim=A18,T18 ] | gzip >  s_cbc.fastq.gz ";
+  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [ -trim=A18,T18 ] | gzip >  s_cbc.fastq.gz ";
 }
 
 ## dirty hack to avoid having to use epxlicit vars
