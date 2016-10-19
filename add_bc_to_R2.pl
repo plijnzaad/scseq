@@ -6,7 +6,8 @@
 ##
 ## The current protocols have an artefact that tends to produces long ranges of polyA (and to a lesser extent polyT)
 ## Specifying e.g. -A=12 will delete any occurrence of AAAAAAAAAAAA.*$ from the read (the quality line are trimmed
-## in the same way.
+## in the same way). The numbers in the usage message correspond to roughly 0.1% of the actual occurrences in the
+## transcriptome, so this should be safe to use.
 ## 
 
 use strict;
@@ -14,7 +15,7 @@ use strict;
 our($fastq, $rb_len, $cbc_len, $A, $C, $G, $T);
 
 if (!($fastq)){
-  die "usage: -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [ -A=10 -C=12 -T=18 -G=14 ] | gzip >  s_cbc.fastq.gz ";
+  die "usage: -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [ -A=14? -C=14 -T=18 -G=14 ] | gzip >  s_cbc.fastq.gz ";
 }
 
 ## dirty hack to avoid having to use epxlicit vars
