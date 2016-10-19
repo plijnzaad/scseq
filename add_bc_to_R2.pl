@@ -4,27 +4,34 @@
 ## This script puts the CBC and UMI from read1 in front of read2 and prints it
 ## to stdout.
 ##
-## The current protocols have an artefact that tends to produces long ranges of polyA (and to a lesser extent polyT)
-## Specifying e.g. -A=12 will delete any occurrence of AAAAAAAAAAAA.*$ from the read (the quality line are trimmed
-## in the same way). (The numbers in the usage message correspond to roughly 0.1% of the actual occurrences in the
-## human transcriptome, so these should be safe to use).
+## The current protocols have an artefact that tends to produces long
+## ranges of polyA (and to a lesser extent polyT) Specifying
+## e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.*$
+## TTTTTTTTTTTTTTTTTT.*$ from the read (the quality lines are trimmed in
+## the same way). (The numbers suggested in the usage message correspond
+## to roughly 0.1% of the actual occurrences in the human transcriptome)
 ## 
 
 use strict;
 
-our($fastq, $rb_len, $cbc_len, $A, $C, $G, $T);
+our($fastq, $rb_len, $cbc_len, $trim);
 
 if (!($fastq)){
-  die "usage: -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [ -A=18 -C=14 -T=18 -G=14 ] | gzip >  s_cbc.fastq.gz ";
+  die "usage: -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [ -trim=A18,T18 ] | gzip >  s_cbc.fastq.gz ";
 }
 
 ## dirty hack to avoid having to use epxlicit vars
 my $regexps ={};
 
-$regexps->{'A'}=$A if defined($A);
-$regexps->{'C'}=$C if defined($C);
-$regexps->{'G'}=$G if defined($G);
-$regexps->{'T'}=$T if defined($T);
+if (defined($trim)) { 
+  my @nucs=split(',', $trim);
+  for my $nt (@nucs) { 
+    my($nuc, $num)= ($nt =~ /^([ACGT])(\d+)/);
+    die "expected string like -trim=A18,T18" unless $nuc && $num;
+    $regexps->{$nuc}=$num;
+  }
+}
+
 my $ntrimmed={};
 my $ntrimmedtotal={};
 
