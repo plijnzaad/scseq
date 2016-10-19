@@ -7,7 +7,7 @@
 ## The current protocols have an artefact that tends to produces long ranges of polyA (and to a lesser extent polyT)
 ## Specifying e.g. -A=12 will delete any occurrence of AAAAAAAAAAAA.*$ from the read (the quality line are trimmed
 ## in the same way). (The numbers in the usage message correspond to roughly 0.1% of the actual occurrences in the
-## transcriptome, so these should be safe to use).
+## human transcriptome, so these should be safe to use).
 ## 
 
 use strict;
