@@ -5,7 +5,7 @@
 ## to stdout.
 
 if (!($fastq)){
-  die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  -cbc_len=8 > s_cbc.fastq ";
+  die "usage: -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 | gzip >  s_cbc.fastq.gz ";
 }
 
 die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
