@@ -25,6 +25,7 @@ if (!($r && $f1 && $out && $t)){
                  -bar=cel-seq_barcodes.csv    \
                  -rb_len= length of UMI (default = 6)  \
                  -cbc_len= length of cellseq2 barcode (default: 8) \
+                 -trim='A12,T=14' (passed to add_bc_to_R2.pl for trimming) \
                  -test=0 or 1 (latter runs in test mode, doesn't call external programs) \
 ";
 }
@@ -83,7 +84,8 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   if ( -f $cbc  ) { 
     print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
   } else { 
-    $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len | $gzip > $cbc ";
+    $trim = "-trim=$trim" if defined($trim);
+    $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len $trim | $gzip > $cbc ";
     print $str."\n";
     execute(cmd=>$str, merge=>0) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);
