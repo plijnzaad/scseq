@@ -6,7 +6,7 @@
 
 ## use strict;
 
-our($fastq, $rb_len, $cbc_len, $A, $C, $G, $T);
+our($fastq, $rb_len, $cbc_len);
 
 if (!($fastq)){
   die "usage: -fastq=s_R1.fastq,s_R2.fastq -rb_len=6  -cbc_len=8 [ -A=10 -C=12 -T=18 -G=14 ] > s_cbc.fastq ";
@@ -15,18 +15,18 @@ if (!($fastq)){
 ## dirty hack to avoid having to use epxlicit vars
 my $polynucs ={};
 
-use Data::Dumper;
+$regexps->{'A'}=$A if defined($A);
+$regexps->{'C'}=$C if defined($C);
+$regexps->{'G'}=$G if defined($G);
+$regexps->{'T'}=$T if defined($T);
+$ncleanedup={};
 
-NUC:
-for my $nuc ( qw(A C G T) ) {
-##  next NUC unless defined($main::{$nuc});
-  local (*sym);
-  *sym=$main::{$nuc};
-  $polynucs->{$nuc}= $sym;
+my @nucs = keys  %$regexps;
+for my $nuc (@nucs) { 
+  $re = '(' . $nuc x $regexps->{$nuc} . ".*)";
+  $regexps->{$nuc}= qr/$re/;
+  $ncleanedup->{$nuc}=0;
 }
-
-print Dumper($polynucs);
-die "blurlp";
 
 die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
 die "no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar code
@@ -35,11 +35,6 @@ my $prefix_len = $cbc_len + $rb_len;
 my $barcode_quality='F';                # i.e. 37
 ## if the quality is too low, bwa makes the BC:Z:<barcodesequence> all lowercase,
 ## and it is not mapped anyway due to -B N flag.
-
-##@@ my $A_regexp= 'A' x $opt_A;
-##@@ my $C_regexp= 'C' x $opt_C;
-##@@ my $G_regexp= 'G' x $opt_G;
-##@@ my $T_regexp= 'T' x $opt_T;
 
 my @fastq = split(/\,/,$fastq);
 
@@ -53,6 +48,7 @@ open($IN2, "$cat $fastq[1] |") || die "$fastq[1]: $!";
 
 my $i = 0; 
 my ($line1, $line2, $bar);
+my $trimmedlen={};
 
 LINE:
 while( not eof $IN1 and not eof $IN2) {
@@ -65,9 +61,14 @@ while( not eof $IN1 and not eof $IN2) {
   }
   if ($i == 1){                   # sequence line
     $bar = substr($line1, 0, $prefix_len);
-
-##@@    if $line2 =~ /$A_regexp/
-
+    for my $nuc (@nucs) { 
+      if( $line2 =~ $regexps->{$nuc} ) { 
+        $newlen=length($line2) - length($1);
+        $trimmedlen->{$nuc}=$newlen;    # remember for the qual line
+        $line2= substr($line2,0, $newlen);
+        $ncleanedup->{$nuc}++;
+      }
+    }
     print  "$bar$line2";
     $i++;
     next LINE;
@@ -79,8 +80,14 @@ while( not eof $IN1 and not eof $IN2) {
   }
   if ($i == 3){                   # line with Phred qualities
     my $qual= $barcode_quality x $prefix_len;
+    for my $nuc (@nucs) {               # trim qual line if seqline was
+      if(exists($trimmedlen->{$nuc})) { 
+        $line2= substr($line2,0, $trimmedlen->{$nuc});
+      }
+    }
     print  "$qual$line2";
     $i = 0;
+    $trimmedlen={};
   }
 }                                       # LINE
 
