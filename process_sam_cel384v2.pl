@@ -72,7 +72,7 @@ while( <IN> ) {
   my @r1 = split("\t",$_);
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
 
-  my $RBC=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC)
+  my $RBC=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC, in that order)
 
   if (!defined($RBC) || $RBC !~ /BC:Z/) { 
     die "expected a BC:Z tag with UMI+cell barcode ($sam line $.)
