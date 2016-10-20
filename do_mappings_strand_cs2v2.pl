@@ -58,7 +58,13 @@ $aln_k = 2 if !$aln_k; # edit distance in seed
 
 $bwaparams=" -q $q -n $aln_n -k $aln_k -l $l " unless $bwaparams;
 
-$allow_mm="" unless $allow_mm;
+$trim="" unless $trim;
+
+if ($allow_mm) { 
+  $allow_mm="-allow_mm=$allow_mm";
+} else { 
+  $allow_mm="";
+}
 
 $test = 0 if !$test;
 if ($outdir){
@@ -88,7 +94,7 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   if ( -f $cbc  ) { 
     print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
   } else { 
-    $trim = "-trim=$trim" if defined($trim);
+    $trim = "-trim=$trim" if $trim;
     my $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len $trim | $gzip > $cbc ";
     print $str."\n";
     execute(cmd=>$str, merge=>0) if ($test == 0);
