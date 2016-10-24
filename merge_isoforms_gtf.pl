@@ -1,11 +1,14 @@
 #!/usr/bin/perl -s -w
 ## This script merges all isoforms into one (often non-existing)
 ## transcript: all exons are strung together into one gene model (which
-## may have non-existing exon juctions)
+## may have non-existing exon juctions, and will have existing junctions missing)
+## The results is a  gtf file with names and coordinates; to create a fasta file
+## out of this, use  gffread.
 
-## Note: in RefSeq there are genes with several copies that all have the same name (like RNU1-1)
-## (EnsEMBL  does this properly, e.g. RN1-1 and RNU1-3). The result is that all copies are strung together into
-## one supertranscript, *even if they lie on different strands* !!
+## Note: in the Hg38 RefSeq there are genes with several copies that all have the
+## same name (like RNU1-1) (EnsEMBL does this properly, e.g. RN1-1 and
+## RNU1-3). The result is that all copies are strung together into one
+## supertranscript, *even if they lie on different strands* !!
 
 use tools;
 
@@ -13,7 +16,8 @@ if (!@ARGV && (!$in || !$cl || !$out)) {
   die "usage: -in=INPUT.gtf -cl=clusters_list.tsv -out=OUTPUT.gtf\n";
 }
 
-## clusters_list.tsv comes from the -m option of ucsc2gtf.pl. 
+## clusters_list.tsv comes from the -m option of ucsc2gtf.pl, is a table (reverse)mapping gene_id to
+## transcript_ids
 
 %stop  = ();
 %strand = ();
