@@ -3,6 +3,9 @@
 ### find stretches of polyXY 's (e.g. AAAACCCCC but also CCCCCAAAAA, for
 ### all combinations of two diff nucleotides Needs (on stdin) sequences in
 ### tab format, i.e.  ID \t ACACACTCAGCGAGCTCCAC...ACACCACTGTT\n
+### 
+### This script is/was used to find out what a reasonable trimvalue is for the -xytrim option
+### in add_bc_to_R2.pl
 
 use strict;
 
