@@ -8,11 +8,6 @@ It contains (sometimes heavily modified) code from other people,
 specifically from Dominic Grün (now at MPI Freiburg), Lennert Kester and
 Abel Vertesy.
 
-(Abel's code can be found at https://github.com/vertesy/TheCorvinas, specifically Python/MapAndGo/MapAndGo.py
-
-
-https://github.com/plijnzaad/demultiplex
-
 # Contents
 
 ## General stuff
@@ -30,6 +25,6 @@ https://github.com/plijnzaad/demultiplex
  * polyXY.pl - finds stretches of e.g. AAAAAAAAGGGGGGGG etc.
  * merge_isoforms_gtf.pl - creates 'supertranscripts', i.e. (virtual) transcripts consisting of all possible exons
 ## mapping and postprocessing
- * do_mappings_strand_cs2v2.pl - driver script for preprocssing, mapping and bookkeeping. See also Abel Vertesy's MapAndGo scripts
+ * do_mappings_strand_cs2v2.pl - driver script for preprocssing, mapping and bookkeeping. See also Abel Vertesy's Python/MapAndGo/MapAndGo.py in https://github.com/vertesy/TheCorvinas
  * add_bc_to_R2.pl - preprocesses the reads prior to mapping. 
  * process_sam_cel384v2.pl - bookkeeping and statistics per cell. Needs code from https://github.com/plijnzaad/demultiplex for recovering mismatched cell barcodes
