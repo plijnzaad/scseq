@@ -1,4 +1,6 @@
 #!/usr/bin/perl -w -s
+## script to demultiplex CELSeq2 single-cell RNA seq data, do the bookkeeping and convert reads to txtp counts
+## original writtten by Dominic Grün and Lennart Kester
 use tools;
 
 use strict;

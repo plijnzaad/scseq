@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w -s
+## driver script for single-cell RNAseq scripts, originally written by Dominic Grün
 use tools;
 use Carp;
 use File::Basename;

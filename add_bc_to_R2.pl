@@ -4,6 +4,8 @@
 ## This script puts the CBC and UMI from read1 in front of read2 and prints it
 ## to stdout.
 ##
+## Original written by Lennart Kester.
+##
 ## The current protocols have an artefact that tends to produces long
 ## ranges of polyA (and to a lesser extent polyT) Specifying
 ## e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.*$

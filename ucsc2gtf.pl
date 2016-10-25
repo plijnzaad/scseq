@@ -12,7 +12,7 @@ use tools;
 ### ---->>>>------>>>>------====  (--- : untransl exon, >>>: intron, ===: translated part of exon)
 ### |<- - - - - - - - - - ->| is transcript coordinates (should have been called 5UTR or 3UTR)
 ###                   |<- ->| is the untranslated part of the first exon (unclear what to call this)
-
+### original written by Dominic Grün
 ### See also genePredToGtf and 
 ### http://genomewiki.ucsc.edu/index.php/Genes_in_gtf_or_gff_format
 

@@ -1,3 +1,5 @@
+## tools/functions to aid single cell RNASeq scripts
+## original written by Dominic Grün
 use File::Temp qw/ tempfile tempdir /;
 use List::Util 'shuffle';
 use Carp;

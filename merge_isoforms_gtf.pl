@@ -5,6 +5,8 @@
 ## The results is a  gtf file with names and coordinates; to create a fasta file
 ## out of this, use  gffread.
 
+## Original written by Dominic Grün
+
 ## Note: in the Hg38 RefSeq there are genes with several copies that all have the
 ## same name (like RNU1-1) (EnsEMBL does this properly, e.g. RN1-1 and
 ## RNU1-3). The result is that all copies are strung together into one
