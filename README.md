@@ -1,10 +1,10 @@
 # scseq
 
-This repo contains scripts and tools for single cell RNAseq, as
+This repository contains scripts and tools for single cell RNAseq, as
 initially developed by Dominic Grün and Alexander van Oudenaarden at the
 [Hubrecht Institute](www.hubrecht.eu/), Utrecht, The Netherlands.
 
-It contains (sometimes heavily modified) code from other people,
+It contains (often heavily modified) code from other people,
 specifically from Dominic Grün (now at MPI Freiburg), Lennert Kester and
 Abel Vertesy.
 
