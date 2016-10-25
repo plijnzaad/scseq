@@ -14,7 +14,7 @@ Abel Vertesy.
  * env.sh.example - sets PATH en PERLLIB so they don't have to be hard-coded
  * tools.pm - functions used by the perl scripts
 
-## bar codes and external controls
+## barcodes and external controls
  * holstegelab_EC.fa - kept for historic reasons
  * ERCC92.fa - superset of holstegelab_EC.fa, well-known set of external spike-in controls
  * cel-seq96_barcodes.csv - initial set of barcodes
