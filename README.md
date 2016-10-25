@@ -5,7 +5,7 @@ initially developed by Dominic Grün and Alexander van Oudenaarden at the
 [Hubrecht Institute](www.hubrecht.eu/), Utrecht, The Netherlands.
 
 It contains (often heavily modified) code from other people,
-specifically from Dominic Grün (now at MPI Freiburg), Lennert Kester and
+specifically from Dominic Grün (now at MPI Freiburg), Lennart Kester and
 Abel Vertesy. For related code, see [Abel Vertesy's repository](https://github.com/vertesy/TheCorvinas), in particular the Python/MapAndGo and Python/Concatenator subdirectories
 
 # Contents
