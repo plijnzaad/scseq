@@ -10,37 +10,63 @@
 ## TTTTTTTTTTTTTTTTTT.*$ from the read (the quality lines are trimmed in
 ## the same way). (The numbers suggested in the usage message correspond
 ## to roughly 0.1% of the actual occurrences in the human transcriptome)
-## 
+##
+## A more sophisticated trimming is provided by the -xytrim=N option.
+## This trims any occurrence of polyX-polyY, where X and Y are any combination
+## of different homopolymers of length N. E.g. -xytrim=3 would get rid of all
+## AAACCC.*, CCCAAA.*, AAAGGG.*, GGGAAA.*, etc. (N=9 is a more reasonable value).
 
 use strict;
 
-our($fastq, $rb_len, $cbc_len, $trim);
+our($fastq, $rb_len, $cbc_len, $trim, $xytrim);
 
 if (!($fastq)){
-  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [ -trim=A18,T18 ] | gzip >  s_cbc.fastq.gz ";
+  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [-trim=A18,T18] [-xytrim=9] | gzip >  s_cbc.fastq.gz ";
 }
 
-## dirty hack to avoid having to use epxlicit vars
 my $regexps ={};
 
 if (defined($trim)) { 
+  warn "finding -trim and -xytrim, -trim will be done first" if defined($xytrim);
   my @nucs=split(',', $trim);
   for my $nt (@nucs) { 
     my($nuc, $num)= ($nt =~ /^([ACGT])(\d+)/);
     die "expected string like -trim=A18,T18" unless $nuc && $num;
     $regexps->{$nuc}=$num;
   }
+
+  for my $nuc ( keys  %$regexps ) { 
+    my $re = '(' . $nuc x $regexps->{$nuc} . ".*)";
+    $regexps->{$nuc}= qr/$re/;
+  }
+}
+
+if(defined($xytrim)) { 
+  use Math::Combinatorics;
+  use Regexp::Optimizer;
+
+  my $ndiff=2;
+  my @combs=combine($ndiff, qw(A C T G));
+  @combs =  map { permute @$_ } @combs;
+  
+  my $o=Regexp::Optimizer->new;
+  
+  for my $comb (@combs) { 
+    my $name=join("_",@$comb)."_";
+    my $quant="{$xytrim,}"; 
+    my $re=(join($quant, @$comb)). "$quant";
+    $regexps->{$name}=  $o->optimize(qr/($re.*)/i);
+  }
 }
 
 my $ntrimmed={};
 my $ntrimmedtotal={};
+my @all=sort keys %$regexps;
+my @regexpids=( grep(/^[ATCG]$/, @all ), grep(/_/, @all )); # first -trim, then -xytrim
 
-my @nucs = keys  %$regexps;
-for my $nuc (@nucs) { 
-  my $re = '(' . $nuc x $regexps->{$nuc} . ".*)";
-  $regexps->{$nuc}= qr/$re/;
-  $ntrimmed->{$nuc}=0;
-  $ntrimmedtotal->{$nuc}=0;
+for my $rid (keys @regexpids) {              # rid=regexp-id
+  $ntrimmed->{$rid}=0;
+  $ntrimmedtotal->{$rid}=0;
 }
 
 die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
@@ -77,13 +103,14 @@ while( not eof $IN1 and not eof $IN2) {
   if ($i == 1){                   # sequence line
     $bar = substr($line1, 0, $prefix_len);
     chomp($line2);
-    for my $nuc (@nucs) { 
-      if( $line2 =~ $regexps->{$nuc} ) { 
+    # do trimming, if any
+    for my $rid (@regexpids) { 
+      if( $line2 =~ $regexps->{$rid} ) { 
         my $newlen=length($line2) - length($1);
-        $trimmedlen->{$nuc}=$newlen;    # remember for the qual line
+        $trimmedlen->{$rid}=$newlen;    # remember for the qual line
         $line2= substr($line2,0, $newlen);
-        $ntrimmed->{$nuc}++;
-        $ntrimmedtotal->{$nuc} += length($1)
+        $ntrimmed->{$rid}++;
+        $ntrimmedtotal->{$rid} += length($1)
       }
     }
     print  "$bar$line2\n";
@@ -98,9 +125,9 @@ while( not eof $IN1 and not eof $IN2) {
   if ($i == 3){                   # line with Phred qualities
     my $qual= $barcode_quality x $prefix_len;
     chomp($line2);
-    for my $nuc (@nucs) {               # trim qual line if seqline was
-      if(exists($trimmedlen->{$nuc})) { 
-        $line2= substr($line2,0, $trimmedlen->{$nuc});
+    for my $rid (@regexpids) {               # trim qual line if seqline was
+      if(exists($trimmedlen->{$rid})) { 
+        $line2= substr($line2,0, $trimmedlen->{$rid});
       }
     }
     print  "$qual$line2\n";
@@ -112,7 +139,7 @@ while( not eof $IN1 and not eof $IN2) {
 close $IN1 || die "$fastq[0]: $!";
 close $IN2 || die "$fastq[1]: $!";
 
-for my $nuc (@nucs) { 
-  warn "trimmed $ntrimmed->{$nuc} poly${nuc}'s from the reads (totalling $ntrimmedtotal->{$nuc} nucleotides)\n"
-      if exists($ntrimmed->{$nuc}) && $ntrimmed->{$nuc} > 0;
+for my $rid (@regexpids) { 
+  warn "trimmed $ntrimmed->{$rid} poly${rid}'s from the reads (totalling $ntrimmedtotal->{$rid} nucleotides)\n"
+      if exists($ntrimmed->{$rid}) && $ntrimmed->{$rid} > 0;
 }

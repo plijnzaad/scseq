@@ -7,7 +7,7 @@ use strict;
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
-    $BR, $i, $npr, $nsam, $bar, $rb_len, $cbc_len, $trim, $allow_mm, $test);
+    $BR, $i, $npr, $nsam, $bar, $rb_len, $cbc_len, $trim, $xytrim, $allow_mm, $test);
 
 if (!($r && $f1 && $out && $t)){
   confess "Usage:  $0 -r=REFERENCE     \
@@ -30,6 +30,7 @@ if (!($r && $f1 && $out && $t)){
                  -rb_len= length of UMI (default = 6)  \
                  -cbc_len= length of cellseq2 barcode (default: 8) \
                  -trim='A12,T=14' (optional, passed to add_bc_to_R2.pl for trimming) \
+                 -xytrim=10 (optional, passed to add_bc_to_R2.pl for trimming) \
                  -allow_mm=N (optional, passed to process_sam_cel384v2, allows N mismatches in cell bar codes) \
                  -test=0 or 1 (latter runs in test mode, doesn't call external programs) \
 ";
@@ -59,6 +60,10 @@ $aln_k = 2 if !$aln_k; # edit distance in seed
 $bwaparams=" -q $q -n $aln_n -k $aln_k -l $l " unless $bwaparams;
 
 $trim="" unless $trim;
+$xytrim="" unless $xytrim;
+
+$trim = "-trim=$trim" if $trim;
+$xytrim = "-xytrim=$xytrim" if $xytrim;
 
 if ($allow_mm) { 
   $allow_mm="-allow_mm=$allow_mm";
@@ -94,8 +99,7 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   if ( -f $cbc  ) { 
     print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
   } else { 
-    $trim = "-trim=$trim" if $trim;
-    my $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len $trim | $gzip > $cbc ";
+    my $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -rb_len=$rb_len -cbc_len=$cbc_len $trim $xytrim | $gzip > $cbc ";
     print $str."\n";
     execute(cmd=>$str, merge=>0) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);
