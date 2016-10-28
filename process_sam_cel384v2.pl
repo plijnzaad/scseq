@@ -13,16 +13,18 @@ use mismatch;
 my ($script,$path) = fileparse($0);
 warn "Running $0\n";
 
-our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm);
+our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol);
 
 if ( !($sam && $barfile && $umi_len && $cbc_len) ) { 
-  die "Usage: $script -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH ";
+  die "Usage: $script -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=2 ]";
 }
+
+$protocol =2 unless $protocol;
 
 my $barcodes_mixedcase = mismatch::readbarcodes_mixedcase($barfile); ## eg. $h->{'AGCGtT') => 'M3'
 my $barcodes = mismatch::mixedcase2upper($barcodes_mixedcase);     ## e.g. $h->{'AGCGTT') => 'M3'
 
-sub bycode {                            # sort the barcodes by their ids
+sub bycode {                            # sort the barcodes by their ids (which may contain prefixes)
   my ($aa,$bb) = ($a,$b);
   $aa=$barcodes->{$aa}; $aa =~ s/[A-Za-z_]//g;
   $bb=$barcodes->{$bb}; $bb =~ s/[A-Za-z_]//g; 
@@ -74,15 +76,23 @@ while( <IN> ) {
   my @r1 = split("\t",$_);
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
 
-  my $RBC=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC, in that order)
+  my $tag=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC, in that order)
 
-  if (!defined($RBC) || $RBC !~ /BC:Z/) { 
+  if (!defined($tag) || $tag !~ /BC:Z/) { 
     die "expected a BC:Z tag with UMI+cell barcode ($sam line $.)
 Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   }
-  my $UMI = substr($RBC,5,$umi_len);
-  my $cbc = substr($RBC,(5+$umi_len), $cbc_len); # cell barcode
 
+  my $umi;
+  my $cbc;                              # cell barcode
+  if ($protocol==2) { 
+    $umi = substr($tag,5,$umi_len);
+    $cbc = substr($tag,(5+$umi_len), $cbc_len);
+  } else { 
+    $umi = substr($tag,5,$cbc_len);
+    $cbc = substr($tag,(5+$cbc_len), $umi_len);
+  }
+    
   my $X0 = 0;
   my $dum = 'NA';
 
@@ -102,14 +112,14 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   } 
   if ($cbc && exists $barcodes->{$cbc}){
     if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
-      $tc->{$RNAME}{$cbc}{$UMI}++; # only uniquely mapping reads are counted
+      $tc->{$RNAME}{$cbc}{$umi}++; # only uniquely mapping reads are counted
       # note: invalid umi's are filtered out later!
     } else {
       $nignored++;
-      $tc->{'#IGNORED'}{$cbc}{$UMI} ++;
-      $tc->{'#unmapped'}{$cbc}{$UMI} += ($X0 == 0 );
-      $tc->{'#multimapped'}{$cbc}{$UMI} += ($X0 > 1 );
-      $tc->{'#reverse'}{$cbc}{$UMI} += ($FLAG != 16);
+      $tc->{'#IGNORED'}{$cbc}{$umi} ++;
+      $tc->{'#unmapped'}{$cbc}{$umi} += ($X0 == 0 );
+      $tc->{'#multimapped'}{$cbc}{$umi} += ($X0 > 1 );
+      $tc->{'#reverse'}{$cbc}{$umi} += ($FLAG != 16);
     }
   } else { 
     $ninvalidCBC++;

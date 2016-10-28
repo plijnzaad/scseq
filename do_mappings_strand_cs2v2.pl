@@ -8,7 +8,7 @@ use strict;
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
-    $BR, $i, $npr, $nsam, $bar, $umi_len, $cbc_len, $trim, $xytrim, $allow_mm, $test);
+    $BR, $i, $npr, $nsam, $bar, $umi_len, $cbc_len, $trim, $xytrim, $allow_mm, $test, $protocol);
 
 if (!($r && $f1 && $out && $t)){
   confess "Usage:  $0 -r=REFERENCE     \
@@ -29,11 +29,12 @@ if (!($r && $f1 && $out && $t)){
                  -nsam= 0 or 1 (1: do *not* produce new sam file (calls bwa samse/sampe)    \
                  -bar=cel-seq_barcodes.csv    \
                  -umi_len= length of UMI (default = 6)  \
-                 -cbc_len= length of cellseq2 barcode (default: 8) \
+                 -cbc_len= length of cell barcode (default: 8) \
                  -trim='A12,T=14' (optional, passed to add_bc_to_R2.pl for trimming) \
                  -xytrim=10 (optional, passed to add_bc_to_R2.pl for trimming) \
                  -allow_mm=N (optional, passed to process_sam_cel384v2, allows N mismatches in cell bar codes) \
-                 -test=0 or 1 (latter runs in test mode, doesn't call external programs) \
+                 -test=0 or 1 (latter runs in test mode, doesn't call external programs) 
+                 -protocol=2 (2 (celseq2): umi=6, cbc=8; 1 (celseq1): umi=4, cbc=8 \
 ";
 }
 
@@ -50,7 +51,9 @@ $BR = 0 if !$BR;
 $npr  = 0 if !$npr;
 $nsam = 0 if !$nsam;
 $ind = "is" if !$ind;
-$umi_len = 6 if !$umi_len;
+$protocol = 2 if !$protocol;
+
+$umi_len = ({1=>4,2=>6})->{$protocol} if !$umi_len;
 $cbc_len = 8 if !$cbc_len;
 
 $BR = $cbc_len+$umi_len;
@@ -125,7 +128,6 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
-  ## if ( $STRT ) # unknown, see before commit 61a2fce50246ce47 (2016-10-11 15:10:00)
   my $str = "process_sam_cel384v2.pl -sam=$out.bam -barfile=$bar -umi_len=$umi_len -cbc_len=$cbc_len $allow_mm";
   print $str."\n";
   execute(cmd=>$str, merge=>1) if ($test == 0);
