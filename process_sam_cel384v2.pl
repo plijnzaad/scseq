@@ -13,10 +13,10 @@ use mismatch;
 my ($script,$path) = fileparse($0);
 warn "Running $0\n";
 
-our ($sam, $barfile, $rb_len, $cbc_len, $allow_mm);
+our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm);
 
-if ( !($sam && $barfile && $rb_len && $cbc_len) ) { 
-  die "Usage: $script -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -rb_len=UMILENGTH -cbc_len=CBCLENGTH ";
+if ( !($sam && $barfile && $umi_len && $cbc_len) ) { 
+  die "Usage: $script -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH ";
 }
 
 my $barcodes_mixedcase = mismatch::readbarcodes_mixedcase($barfile); ## eg. $h->{'AGCGtT') => 'M3'
@@ -80,8 +80,8 @@ while( <IN> ) {
     die "expected a BC:Z tag with UMI+cell barcode ($sam line $.)
 Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
   }
-  my $UMI = substr($RBC,5,$rb_len);
-  my $cbc = substr($RBC,(5+$rb_len), $cbc_len); # cell barcode
+  my $UMI = substr($RBC,5,$umi_len);
+  my $cbc = substr($RBC,(5+$umi_len), $cbc_len); # cell barcode
 
   my $X0 = 0;
   my $dum = 'NA';
@@ -120,7 +120,7 @@ Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
 }                                       # SAMLINE
 close(IN) || die "$cat $sam: $!";
 
-my $bn = 4 ** $rb_len;
+my $bn = 4 ** $umi_len;
 
 my $coutt = $sam;
 my $coutb = $sam;

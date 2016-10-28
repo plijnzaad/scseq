@@ -20,10 +20,10 @@
 
 use strict;
 
-our($fastq, $rb_len, $cbc_len, $trim, $xytrim);
+our($fastq, $umi_len, $cbc_len, $trim, $xytrim);
 
 if (!($fastq)){
-  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -rb_len=6  -cbc_len=8 [-trim=A18,T18] [-xytrim=9] | gzip >  s_cbc.fastq.gz ";
+  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6  -cbc_len=8 [-trim=A18,T18] [-xytrim=9] | gzip >  s_cbc.fastq.gz ";
 }
 
 my $regexps ={};
@@ -71,10 +71,10 @@ for my $rid (keys @regexpids) {              # rid=regexp-id
   $ntrimmedtotal->{$rid}=0;
 }
 
-die "no -rb_len specified" unless $rb_len > 0; # length of the UMI
+die "no -umi_len specified" unless $umi_len > 0; # length of the UMI
 die "no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar code
 
-my $prefix_len = $cbc_len + $rb_len;
+my $prefix_len = $cbc_len + $umi_len;
 my $barcode_quality='F';                # i.e. 37
 ## if the quality is too low, bwa makes the BC:Z:<barcodesequence> all lowercase,
 ## and it is not mapped anyway due to -B N flag.
