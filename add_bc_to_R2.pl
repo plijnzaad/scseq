@@ -104,8 +104,8 @@ while( not eof $IN1 and not eof $IN2) {
   }
 
 ### id line:
-  chomp($lines1[0]);
-  my($id, $rest)=split(' ',$lines1[0]);
+  chomp($lines2[0]);
+  my($id, $rest)=split(' ',$lines2[0]);
 
 ### sequence line:
   $bar = substr($lines1[1], 0, $prefix_len);
