@@ -19,7 +19,7 @@
 ## AAACCC.*, CCCAAA.*, AAAGGG.*, GGGAAA.*, etc. (N=9 is a more reasonable value).
 ##
 ## By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
-## to swap them
+## to swap them.
 
 use strict;
 
@@ -78,8 +78,6 @@ die "no -umi_len specified" unless $umi_len > 0; # length of the UMI
 die "no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar code
 
 my $prefix_len = $cbc_len + $umi_len;
-my $barcode_quality='F';                # i.e. 37
-## don't use 0, bwa would make the BC:Z:<barcodesequence> all lowercase
 
 my @fastq = split(/\,/,$fastq);
 
@@ -91,55 +89,57 @@ my($IN1, $IN2);
 open($IN1, "$cat $fastq[0] |") || die "$fastq[0]: $!";
 open($IN2, "$cat $fastq[1] |") || die "$fastq[1]: $!";
 
-my $i = 0; 
 my ($line1, $line2, $bar);
 my $trimmedlen={};
 
+my (@lines1, @lines2);
 
-LINE:
+READ:
 while( not eof $IN1 and not eof $IN2) {
-  $line1 = <$IN1>;
-  $line2 = <$IN2>; 
-  if ($i == 0){                   # id-line
-    print  $line2;
-    $i++;
-    next LINE;
+  for(my $i=0; $i<4;$i++) {             # 4 lines at a time
+    $lines1[$i] = <$IN1>;
+    $lines2[$i] = <$IN2>; 
   }
-  if ($i == 1){                   # sequence line
-    $bar = substr($line1, 0, $prefix_len);
-    chomp($line2);
-    # do trimming, if any
-    
-    for my $rid (@regexpids) { 
-      if( $line2 =~ $regexps->{$rid} ) { 
-        my $newlen=length($line2) - length($1);
-        $trimmedlen->{$rid}=$newlen;    # remember for the qual line
-        $line2= substr($line2,0, $newlen);
-        $ntrimmed->{$rid}++;
-        $ntrimmedtotal->{$rid} += length($1)
-      }
+
+### id line:
+  my($id, $rest)=split(' ',$lines1[0]);
+
+### sequence line:
+  $bar = substr($lines1[1], 0, $prefix_len);
+  my $umi=substr($bar,0, $umi_len);
+  my $cbc=substr($bar, $umi_len, $cbc_len);
+  if ($protocol == 1) { 
+    $umi=substr($bar,0, $cbc_len);
+    $cbc=substr($bar, $cbc_len, $umi_len);
+  }
+
+  $lines2[0] = "$id:cbc=$cbc:umi=$umi $rest";
+
+### do trimming, if any:
+  my $line2=$lines2[1];
+  for my $rid (@regexpids) { 
+    if( $line2 =~ $regexps->{$rid} ) { 
+      my $newlen=length($line2) - length($1);
+      $trimmedlen->{$rid}=$newlen;    # remember for the qual line
+      $line2= substr($line2,0, $newlen);
+      $ntrimmed->{$rid}++;
+      $ntrimmedtotal->{$rid} += length($1)
     }
-    print  "$line2\n";
-    $i++;
-    next LINE;
   }
-  if ($i == 2){                   # the '+'-line
-    print $line2;
-    $i++;
-    next LINE;
-  }
-  if ($i == 3){                   # line with Phred qualities
-    chomp($line2);
-    for my $rid (@regexpids) {               # trim qual line if seqline was
-      if(exists($trimmedlen->{$rid})) { 
-        $line2= substr($line2,0, $trimmedlen->{$rid});
-      }
+  $lines2[1]=$line2;
+
+### line with Phred qualities:
+  $line2=$lines2[3];
+  for my $rid (@regexpids) {               # trim qual line if seqline was
+    if(exists($trimmedlen->{$rid})) { 
+      $line2= substr($line2,0, $trimmedlen->{$rid});
     }
-    print  "$line2\n";
-    $i = 0;
-    $trimmedlen={};
   }
-}                                       # LINE
+  $lines2[3]=$line2;
+
+  print  join("", @lines2);
+  $trimmedlen={};
+}                                       # READ
 
 close $IN1 || die "$fastq[0]: $!";
 close $IN2 || die "$fastq[1]: $!";

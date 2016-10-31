@@ -16,7 +16,7 @@ warn "Running $0\n";
 our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol);
 
 if ( !($sam && $barfile && $umi_len && $cbc_len) ) { 
-  die "Usage: $script -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=2 ]";
+  die "Usage: $script -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=1 ]";
 }
 
 $protocol =2 unless $protocol;
@@ -37,7 +37,7 @@ my $mismatch_REs=undef;
 if ($allow_mm) { 
   $mismatch_REs = mismatch::convert2mismatchREs(barcodes=>$barcodes_mixedcase, allowed_mismatches =>$allow_mm);
 }
-$barcodes_mixedcase=undef;
+$barcodes_mixedcase=undef;              # not used in remainder, delete to avoid confusion
 
 my $nreads = 0;
 my $nreverse=0;
@@ -76,23 +76,10 @@ while( <IN> ) {
   my @r1 = split("\t",$_);
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
 
-  my $tag=shift(@rest);   # first is BC:Z: tag, contains barcode (== UMI + CBC, in that order)
+  my(@parts)=split(':', $QNAME);
+  my($umi, $cbc)=@parts[ (-2,-1) ];
+  ($cbc, $umi)=@parts[ (-2,-1) ] if ($protocol==1);     
 
-  if (!defined($tag) || $tag !~ /BC:Z/) { 
-    die "expected a BC:Z tag with UMI+cell barcode ($sam line $.)
-Is this a sam file from bwa with input from add_bc_to_R2.pl output?";
-  }
-
-  my $umi;
-  my $cbc;                              # cell barcode
-  if ($protocol==2) { 
-    $umi = substr($tag,5,$umi_len);
-    $cbc = substr($tag,(5+$umi_len), $cbc_len);
-  } else { 
-    $umi = substr($tag,5,$cbc_len);
-    $cbc = substr($tag,(5+$cbc_len), $umi_len);
-  }
-    
   my $X0 = 0;
   my $dum = 'NA';
 
