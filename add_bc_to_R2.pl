@@ -29,6 +29,8 @@ if (!($fastq)){
   die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6 -cbc_len=8 [-trim=A18,T18] [-xytrim=9] [ -protocol=1 ] | gzip >  s_cbc.fastq.gz ";
 }
 
+$protocol=2 if !defined($protocol);
+
 my $regexps ={};
 
 if (defined($trim)) { 
@@ -102,6 +104,7 @@ while( not eof $IN1 and not eof $IN2) {
   }
 
 ### id line:
+  chomp($lines1[0]);
   my($id, $rest)=split(' ',$lines1[0]);
 
 ### sequence line:
@@ -113,7 +116,7 @@ while( not eof $IN1 and not eof $IN2) {
     $cbc=substr($bar, $cbc_len, $umi_len);
   }
 
-  $lines2[0] = "$id:cbc=$cbc:umi=$umi $rest";
+  $lines2[0] = "$id:cbc=$cbc:umi=$umi $rest\n";
 
 ### do trimming, if any:
   my $line2=$lines2[1];
