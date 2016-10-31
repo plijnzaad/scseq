@@ -29,8 +29,8 @@ if (!($r && $f1 && $out && $t)){
                  -bar=cel-seq_barcodes.csv    \
                  -umi_len= length of UMI (default = 6)  \
                  -cbc_len= length of cell barcode (default: 8) \
-                 -trim='A12,T=14' (optional, passed to add_bc_to_R2.pl for trimming) \
-                 -xytrim=10 (optional, passed to add_bc_to_R2.pl for trimming) \
+                 -trim='A12,T=14' (optional, passed to preprocess_fastq.pl for trimming) \
+                 -xytrim=10 (optional, passed to preprocess_fastq.pl for trimming) \
                  -allow_mm=N (optional, passed to process_sam_cel384v2, allows N mismatches in cell bar codes) \
                  -test=0 or 1 (latter runs in test mode, doesn't call external programs) 
                  -protocol=2 (2 (celseq2): umi=6, cbc=8; 1 (celseq1): umi=4, cbc=8 \
@@ -97,9 +97,9 @@ if ( $ext =~ /\.gz/ ) {
 
 if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   if ( -f $cbc  ) { 
-    print "*** Seeing file $cbc, not running add_bc_to_R2.pl to re-create it\n";
+    print "*** Seeing file $cbc, not running preprocess_fastq.pl to re-create it\n";
   } else { 
-    my $str = "add_bc_to_R2.pl -fastq=$f1,$f2 -umi_len=$umi_len -cbc_len=$cbc_len $trim $xytrim | $gzip > $cbc ";
+    my $str = "preprocess_fastq.pl -fastq=$f1,$f2 -umi_len=$umi_len -cbc_len=$cbc_len $trim $xytrim | $gzip > $cbc ";
     print $str."\n";
     execute(cmd=>$str, merge=>0) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);
