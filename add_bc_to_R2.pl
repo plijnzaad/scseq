@@ -18,13 +18,15 @@
 ## of different homopolymers of length N. E.g. -xytrim=3 would get rid of all
 ## AAACCC.*, CCCAAA.*, AAAGGG.*, GGGAAA.*, etc. (N=9 is a more reasonable value).
 ##
+## By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
+## to swap them
 
 use strict;
 
-our($fastq, $umi_len, $cbc_len, $trim, $xytrim);
+our($fastq, $umi_len, $cbc_len, $trim, $xytrim, $protocol);
 
 if (!($fastq)){
-  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6  -cbc_len=8 [-trim=A18,T18] [-xytrim=9] | gzip >  s_cbc.fastq.gz ";
+  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6 -cbc_len=8 [-trim=A18,T18] [-xytrim=9] [ -protocol=1 ] | gzip >  s_cbc.fastq.gz ";
 }
 
 my $regexps ={};
@@ -117,7 +119,7 @@ while( not eof $IN1 and not eof $IN2) {
         $ntrimmedtotal->{$rid} += length($1)
       }
     }
-    print  "$bar$line2\n";
+    print  "$line2\n";
     $i++;
     next LINE;
   }
@@ -127,14 +129,13 @@ while( not eof $IN1 and not eof $IN2) {
     next LINE;
   }
   if ($i == 3){                   # line with Phred qualities
-    my $qual= $barcode_quality x $prefix_len; # should use the actual quality ...
     chomp($line2);
     for my $rid (@regexpids) {               # trim qual line if seqline was
       if(exists($trimmedlen->{$rid})) { 
         $line2= substr($line2,0, $trimmedlen->{$rid});
       }
     }
-    print  "$qual$line2\n";
+    print  "$line2\n";
     $i = 0;
     $trimmedlen={};
   }
