@@ -76,9 +76,13 @@ while( <IN> ) {
   my @r1 = split("\t",$_);
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
 
+  my ($cbc,$umi);
   my(@parts)=split(':', $QNAME);
-  my($umi, $cbc)=@parts[ (-2,-1) ];
-  ($cbc, $umi)=@parts[ (-2,-1) ] if ($protocol==1);     
+  for my $tag ( @parts ) { 
+    $cbc= $1 if $tag =~ /cbc=([A-Z]+)/i;
+    $umi= $1 if $tag =~ /umi=([A-Z]+)/i;
+  }
+  die "could not find cbc= or umi= in id $QNAME of file $sam " unless $cbc &&  $umi;
 
   my $X0 = 0;
   my $dum = 'NA';
