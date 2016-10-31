@@ -17,6 +17,7 @@
 ## This trims any occurrence of polyX-polyY, where X and Y are any combination
 ## of different homopolymers of length N. E.g. -xytrim=3 would get rid of all
 ## AAACCC.*, CCCAAA.*, AAAGGG.*, GGGAAA.*, etc. (N=9 is a more reasonable value).
+##
 
 use strict;
 
@@ -76,8 +77,7 @@ die "no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar code
 
 my $prefix_len = $cbc_len + $umi_len;
 my $barcode_quality='F';                # i.e. 37
-## if the quality is too low, bwa makes the BC:Z:<barcodesequence> all lowercase,
-## and it is not mapped anyway due to -B N flag.
+## don't use 0, bwa would make the BC:Z:<barcodesequence> all lowercase
 
 my @fastq = split(/\,/,$fastq);
 
@@ -93,6 +93,7 @@ my $i = 0;
 my ($line1, $line2, $bar);
 my $trimmedlen={};
 
+
 LINE:
 while( not eof $IN1 and not eof $IN2) {
   $line1 = <$IN1>;
@@ -106,6 +107,7 @@ while( not eof $IN1 and not eof $IN2) {
     $bar = substr($line1, 0, $prefix_len);
     chomp($line2);
     # do trimming, if any
+    
     for my $rid (@regexpids) { 
       if( $line2 =~ $regexps->{$rid} ) { 
         my $newlen=length($line2) - length($1);
@@ -125,7 +127,7 @@ while( not eof $IN1 and not eof $IN2) {
     next LINE;
   }
   if ($i == 3){                   # line with Phred qualities
-    my $qual= $barcode_quality x $prefix_len;
+    my $qual= $barcode_quality x $prefix_len; # should use the actual quality ...
     chomp($line2);
     for my $rid (@regexpids) {               # trim qual line if seqline was
       if(exists($trimmedlen->{$rid})) { 
