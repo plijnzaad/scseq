@@ -100,6 +100,8 @@ my $trimmedlen={};
 
 my (@lines1, @lines2);
 
+my $reads=0;
+
 READ:
 while( not eof $IN1 and not eof $IN2) {
   for(my $i=0; $i<4;$i++) {             # 4 lines at a time
@@ -146,11 +148,13 @@ while( not eof $IN1 and not eof $IN2) {
 
   print  join("", @lines2);
   $trimmedlen={};
+  $nreads++;
 }                                       # READ
 
 close $IN1 || die "$0: $fastq[0]: $!";
 close $IN2 || die "$0: $fastq[1]: $!";
 
+warn "preprocessed $nreads reads\n";
 for my $rid (@regexpids) { 
   warn "trimmed $ntrimmed->{$rid} poly${rid}'s from the reads (totalling $ntrimmedtotal->{$rid} nucleotides)\n"
       if exists($ntrimmed->{$rid}) && $ntrimmed->{$rid} > 0;
