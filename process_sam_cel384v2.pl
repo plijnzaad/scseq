@@ -16,7 +16,7 @@ warn "Running $0, version $version\n";
 our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol);
 
 if ( !($sam && $barfile && $umi_len && $cbc_len) ) { 
-  die "Usage: $script -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=1 ]";
+  die "Usage: $0 -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=1 ]";
 }
 
 $protocol =2 unless $protocol;
@@ -70,7 +70,7 @@ while( <IN> ) {
   }
 
   if (substr($_,1,2) eq "PG" ){
-    warn "$script: found: $_";                 # PL:should check if it contains bwa
+    warn "$0: found: $_";                 # PL:should check if it contains bwa
     next SAMLINE;
   }
 
@@ -83,7 +83,7 @@ while( <IN> ) {
     $cbc= $1 if $tag =~ /cbc=([A-Z]+)/i;
     $umi= $1 if $tag =~ /umi=([A-Z]+)/i;
   }
-  die "could not find cbc= or umi= in id $QNAME of file $sam " unless $cbc &&  $umi;
+  die "$0: could not find cbc= or umi= in id $QNAME of file $sam " unless $cbc &&  $umi;
 
   my $X0 = 0;
   my $dum = 'NA';
