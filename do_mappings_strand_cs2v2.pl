@@ -3,7 +3,11 @@
 use tools;
 use Carp;
 use File::Basename;
+
 use strict;
+
+my $version=getversion($0);
+warn "Running $0, version $version\n";
 
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
@@ -24,7 +28,8 @@ if (!($r && $f1 && $out && $t)){
                  -aln_k=edit distance in seed  (bwa aln option -k, default 2)   \
                  -l=SEED_LENGTH  (bwa -l option)  \
                  -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
-                 -npr=0,1,2: 0: map and process; 1: only map ; 2: only process
+                 -npr=0,1,2: 0: map and process; 1: on
+ly map ; 2: only process
                  -nsam= 0 or 1 (1: do *not* produce new sam file (calls bwa samse/sampe)    \
                  -bar=cel-seq_barcodes.csv    \
                  -umi_len= length of UMI (default = 6)  \
@@ -80,14 +85,14 @@ if ($outdir){
 confess "reference genome $r not found" unless -f $r;
 
 if ($i){
-  my $str = "bwa index -a $ind $r";
+  my $str = "bwa index -a $ind $r 2>&1 ";
   print $str."\n";
-  execute(cmd=>$str, merge=>1) if ($test == 0);
+  execute($str) if ($test == 0);
 }
 
 my ($name, $path, $ext)=fileparse($f2, ('.fastq', '.fastq.gz'));
 
-my $cbc = "$path/${name}_cbc.fastq";       # output from add_bc_to_R2, input to bwa
+my $cbc = "$path/${name}_cbc.fastq";       # output from preprocess_fastq.pl, input to bwa
 my $gzip = " cat ";
 
 if ( $ext =~ /\.gz/ ) { 
@@ -99,30 +104,39 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   if ( -f $cbc  ) { 
     print "*** Seeing file $cbc, not running preprocess_fastq.pl to re-create it\n";
   } else { 
-    my $str = "preprocess_fastq.pl -fastq=$f1,$f2 -umi_len=$umi_len -cbc_len=$cbc_len $trim $xytrim | $gzip > $cbc ";
+    my($log1, $log2)=(openlog("preprocessLOG-$version"), openlog("preprocessZIP-$version"));
+    my $str = "preprocess_fastq.pl -fastq=$f1,$f2 -umi_len=$umi_len -cbc_len=$cbc_len $trim $xytrim 2>$log1 | $gzip > $cbc 2> $log2 ";
     print $str."\n";
-    execute(cmd=>$str, merge=>0) if ($test == 0);
+    execute($str) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);
+    dumplog($log1);
+    dumplog($log2);
   }
 
   my $sai = "$outdir/$name.sai"; 
-
-  my $str = "bwa aln -B 0 -t $t $bwaparams $r $cbc > $sai";
+  my($log)=openlog("bwa_alnLOG-$version");
+  my $str = "bwa aln -B 0 -t $t $bwaparams $r $cbc > $sai 2>$log";
   print $str."\n";
-  execute(cmd=>$str, merge=>0) if ($test == 0);
+  execute($str) if ($test == 0);
   check_filesize(file=>$sai, minsize=>1000);
+  dumplog($log);
   
   if ( $nsam == 0 ){
     my $compress = "samtools view -h -b - ";
-    $str = "bwa samse -n $n $r $sai $cbc | $compress > $out.bam";
+    my($log1, $log2)=(openlog("bwasamseLOG-$version"),openlog("samtoolsLOG-$version"));
+    $str = "bwa samse -n $n $r $sai $cbc 2>$log1 | $compress > $out.bam 2> $log2";
+    print $str."\n";
+    execute($str) if ($test == 0);
+    check_filesize(file=>"$out.bam",minsize=>1000);
+    dumplog($log1);
+    dumplog($log2);
   }
-  print $str."\n";
-  execute(cmd=>$str) if ($test == 0);
-  check_filesize(file=>"$out.bam",minsize=>1000);
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
-  my $str = "process_sam_cel384v2.pl -sam=$out.bam -barfile=$bar -umi_len=$umi_len -cbc_len=$cbc_len $allow_mm";
+  my($log)=openlog("process_samBOTH-$version");
+  my $str = "process_sam_cel384v2.pl -sam=$out.bam -barfile=$bar -umi_len=$umi_len -cbc_len=$cbc_len $allow_mm > $log 2>&1 ";
   print $str."\n";
-  execute(cmd=>$str, merge=>1) if ($test == 0);
+  execute($str) if ($test == 0);
+  dumplog($log);
 }                                       # if ( $npr == 0 || $npr == 2)

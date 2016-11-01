@@ -21,7 +21,11 @@
 ## By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
 ## to swap them.
 
+use tools;
 use strict;
+
+my $version=getversion($0);
+warn "Running $0, version $version\n";
 
 our($fastq, $umi_len, $cbc_len, $trim, $xytrim, $protocol);
 

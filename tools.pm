@@ -1,8 +1,10 @@
 ## tools/functions to aid single cell RNASeq scripts
 ## original written by Dominic Grün
 use File::Temp qw/ tempfile tempdir /;
+use File::Basename;
 use List::Util 'shuffle';
 use Carp;
+use warnings; 
 
 sub s_ascii2phred {
     # returns Phred quality of basecall in Solexa/Ilumina reads given ASCII symbol
@@ -158,7 +160,7 @@ sub fasta2hash_old {
     # receives a pointer to a hash as argument
     $hash = $_[0];
     $file = $_[1];
-    ($fh, $filename) = tempfile();
+    (undef, $filename) = tempfile();
     open(IN,"<",$file);
     $j = 0;
     print STDERR $file."\n";
@@ -343,7 +345,7 @@ sub get_entry_gff {
     my @G     = split(/\;/,$F[8]);
     foreach $g (@G){
 	if ($g =~ /($entry)/){
-	  ($dum,$name) = split(/\=/,$g);
+	  (undef,$name) = split(/\=/,$g);
 	  $name =~ s/[\s\"\n]//g;
 	  return $name;
 	}
@@ -423,43 +425,59 @@ sub makedir {
     my $directory = shift;
     
     unless(-e $directory or mkdir $directory) {
-        confess "Unable to create $directoryn";
+        confess "Unable to create $directory";
     }
 }
 
 sub execute { 
-  ## call as execute(cmd=>$str) or as
-  ## execute(cmd=>$str, merge=>1). In latter case, stdout and stderr
-  ##  are merged when reporting errors
-  my $args = ref $_[0] eq 'HASH' ? shift : {@_};
-  my($cmd, $merge)=map{$args->{$_} } qw(cmd merge);
-  my ($msgheader)="Output";
-
-  if($merge) {
-    $merge= '2>&1';
-    $msgheader="Combined stdout and stderr";
-  } else {
-    $merge='';
-  }
-
-  my $out=`$args->{cmd} $merge `;
+  my($cmd)=@_;
+  warn "executing $cmd ...\n";
+  my $out=`$cmd`;
 
   if ($?) {
-    print STDERR "Command line '$cmd' exited with non-zero exit-status $?\n. $msgheader was\n$out\n";
+    warn "Command line '$cmd' exited with non-zero exit-status $?\n. Output was\n$out\n";
   } else {
-    
-    if ($out=~ /\S/ ) { 
-      print STDERR "Command line '$cmd' had following output:\n\n$out\n";
+    if ($out=~ /\S/ ) {
+      warn "Command line '$cmd' had following (ignored) output:\n\n$out\n";
     }
   }
-}
+}                                       # execute
+
+sub openlog { 
+  my($template)=@_;
+
+  $template .= "-XXXXXXXX";
+
+  my($logdir)="logs";
+  if( ! -d $logdir ) { 
+    warn "Creating directory $logdir for logfiles ...\n";
+    mkdir($logdir) || confess "Could not create directory $logdir,";
+  }
+
+  { no warnings;
+    local($^W)=0;
+    my(undef, $log)=tempfile("$logdir/$template", OPEN=>0);
+    $log;
+  }
+}                                       # openlog
+
+sub dumplog {
+  my($log)=@_;
+  if ( ! -r $log) { warn "logfile $log does not exist"; return; }
+  if ( -z $log) { unlink($log); return; }
+  open(LOG, $log);
+  warn "Output from logfile $log:\n";
+  while(<LOG>){print;}
+  close(LOG);
+  unlink($log);
+}                                       # dumplog
 
 sub check_filesize {
   my $args = ref $_[0] eq 'HASH' ? shift : {@_};
   my($file, $minsize)=map{$args->{$_} } qw(file minsize);
   my $filesize=  (-s $file || 0);
   confess "file $file non-existent or too small" unless $filesize >= $minsize;
-}
+}                                       # check_filesize
 
 sub commafy {
   ## 5753757264 => "5,753,757,264"
@@ -468,8 +486,17 @@ sub commafy {
   die "commafy: $i is not a natural number," unless $i =~ /^\d+$/;
   ( $i < 1000) ? "$i$rest" :
       commafy(int($i/1000), sprintf(",%03d", $i%1000) . $rest);
-}
+}                                       # commafy
 
+sub getversion {
+  my($path)=@_;
+  my ($fullpath)=`which $path`;
+  my ($script,$dir) = fileparse($fullpath);
+  my $version=`cd $dir && git describe --match 'v[0-9]*' --tags --dirty`;
+  chomp($version);
+  $version='UNKNOWN' unless $version;
+  $version;
+}                                       # getversion
 
 1;
 

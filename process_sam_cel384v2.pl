@@ -10,8 +10,11 @@ use File::Basename;
 
 use mismatch;
 
-my ($script,$path) = fileparse($0);
-warn "Running $0\n";
+my ($fullpath)=`which $0`;
+my ($script,$path) = fileparse($fullpath);
+my $version=`cd $path && git describe --match 'v[0-9]*' --tags --dirty`;
+$version='UNKNOWN' unless $version;
+warn "Running $0, version $version\n";
 
 our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol);
 
@@ -38,6 +41,7 @@ if ($allow_mm) {
   $mismatch_REs = mismatch::convert2mismatchREs(barcodes=>$barcodes_mixedcase, allowed_mismatches =>$allow_mm);
 }
 $barcodes_mixedcase=undef;              # not used in remainder, delete to avoid confusion
+
 
 my $nreads = 0;
 my $nreverse=0;
