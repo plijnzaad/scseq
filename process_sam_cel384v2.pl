@@ -10,10 +10,7 @@ use File::Basename;
 
 use mismatch;
 
-my ($fullpath)=`which $0`;
-my ($script,$path) = fileparse($fullpath);
-my $version=`cd $path && git describe --match 'v[0-9]*' --tags --dirty`;
-$version='UNKNOWN' unless $version;
+my $version=getversion($0);
 warn "Running $0, version $version\n";
 
 our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol);
