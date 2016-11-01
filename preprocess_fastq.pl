@@ -42,7 +42,7 @@ if (defined($trim)) {
   my @nucs=split(',', $trim);
   for my $nt (@nucs) { 
     my($nuc, $num)= ($nt =~ /^([ACGT])(\d+)/);
-    die "expected string like -trim=A18,T18" unless $nuc && $num;
+    die "$0: expected string like -trim=A18,T18" unless $nuc && $num;
     $regexps->{$nuc}=$num;
   }
 
@@ -80,8 +80,8 @@ for my $rid (keys @regexpids) {              # rid=regexp-id
   $ntrimmedtotal->{$rid}=0;
 }
 
-die "no -umi_len specified" unless $umi_len > 0; # length of the UMI
-die "no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar code
+die "$0: no -umi_len specified" unless $umi_len > 0; # length of the UMI
+die "$0: no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar code
 
 my $prefix_len = $cbc_len + $umi_len;
 
@@ -92,8 +92,8 @@ my $cat = "cat ";
 $cat = "zcat " if $fastq =~ /\.gz/;
 
 my($IN1, $IN2);
-open($IN1, "$cat $fastq[0] |") || die "$fastq[0]: $!";
-open($IN2, "$cat $fastq[1] |") || die "$fastq[1]: $!";
+open($IN1, "$cat $fastq[0] |") || die "$0: $fastq[0]: $!";
+open($IN2, "$cat $fastq[1] |") || die "$0: $fastq[1]: $!";
 
 my ($line1, $line2, $bar);
 my $trimmedlen={};
@@ -148,8 +148,8 @@ while( not eof $IN1 and not eof $IN2) {
   $trimmedlen={};
 }                                       # READ
 
-close $IN1 || die "$fastq[0]: $!";
-close $IN2 || die "$fastq[1]: $!";
+close $IN1 || die "$0: $fastq[0]: $!";
+close $IN2 || die "$0: $fastq[1]: $!";
 
 for my $rid (@regexpids) { 
   warn "trimmed $ntrimmed->{$rid} poly${rid}'s from the reads (totalling $ntrimmedtotal->{$rid} nucleotides)\n"
