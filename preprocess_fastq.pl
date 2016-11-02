@@ -107,6 +107,8 @@ while( not eof $IN1 and not eof $IN2) {
   for(my $i=0; $i<4;$i++) {             # 4 lines at a time
     $lines1[$i] = <$IN1>;
     $lines2[$i] = <$IN2>; 
+    die "expected '+' lines in files @fastq, line $." 
+        unless $line1[3] eq '+' && $line2[3] eq '+';
   }
 
 ### id line:
