@@ -102,16 +102,19 @@ while( <IN> ) {
     $cbc=mismatch::rescue($cbc, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
     $nrescued_invalidCBC += defined($cbc);
   } 
+
+  ## count only reads with valid barcode, uniquely mapping in the sense orientation:
   if ($cbc && exists $barcodes->{$cbc}){
-    if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand, i.e. doesn't map properly
-      $tc->{$RNAME}{$cbc}{$umi}++; # only uniquely mapping reads are counted
+    if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand
+      $tc->{$RNAME}{$cbc}{$umi}++; 
       # note: invalid umi's are filtered out later!
     } else {
       $nignored++;
       $tc->{'#IGNORED'}{$cbc}{$umi} ++;
+      ## keep track of some subsets of this
       $tc->{'#unmapped'}{$cbc}{$umi} += ($X0 == 0 );
       $tc->{'#multimapped'}{$cbc}{$umi} += ($X0 > 1 );
-      $tc->{'#reverse'}{$cbc}{$umi} += ($FLAG != 16);
+      $tc->{'#reverse'}{$cbc}{$umi} += ($FLAG != 16); # (may overlap with multimappers)
     }
   } else { 
     $ninvalidCBC++;
@@ -122,7 +125,6 @@ while( <IN> ) {
 }                                       # SAMLINE
 close(IN) || die "$cat $sam: $!";
 
-my $bn = 4 ** $umi_len;
 
 my $coutt = $sam;
 my $coutb = $sam;
@@ -155,6 +157,7 @@ print OUTT "\n";
 my $trc = 0;
 
 ## print read counts, umi counts and transcript counts
+my $bn = 4 ** $umi_len;                 # max #(different umis)
 
 GENE:
 foreach my $gene (sort keys %$tc) {
@@ -173,11 +176,12 @@ CELL:
       }
       my $reads=$tc->{$gene}{$cbc}{$umi};
       $n += ($reads > 0);
-      $rc += $reads; # total valid (=uniquely mapped) reads for this gene+cell
+      $rc += $reads; # total valid (=uniquely sense-mapped) reads for this gene+cell
     }                                   # UMI
-    $trc += $rc unless $gene =~ /^#/;      # virtual genes such as '#unmapped';
+    $trc += $rc unless $gene =~ /^#/;
     $n = $n - 0.5 if ($n == $bn); # saturation correction PL: @@@ keep count of this?
-    my $txpts=(-log(1 - ($n/$bn))*$bn); # binomial correction
+    my $txpts = $n;                      # used only for '#IGNORED' etc. @@@fix this
+    $txpts = -log(1 - ($n/$bn)) * $bn unless ($gene =~ /^#/ ); # binomial/Poisson correction
 
     print OUTB "\t$n";
     print OUTC "\t$rc";
