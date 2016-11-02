@@ -100,7 +100,7 @@ my $trimmedlen={};
 
 my (@lines1, @lines2);
 
-my $reads=0;
+my $nreads=0;
 
 READ:
 while( not eof $IN1 and not eof $IN2) {
