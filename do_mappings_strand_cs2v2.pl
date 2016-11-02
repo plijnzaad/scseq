@@ -28,8 +28,7 @@ if (!($r && $f1 && $out && $t)){
                  -aln_k=edit distance in seed  (bwa aln option -k, default 2)   \
                  -l=SEED_LENGTH  (bwa -l option)  \
                  -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
-                 -npr=0,1,2: 0: map and process; 1: on
-ly map ; 2: only process
+                 -npr=0,1,2: 0: map and process; 1: only map ; 2: only process \
                  -nsam= 0 or 1 (1: do *not* produce new sam file (calls bwa samse/sampe)    \
                  -bar=cel-seq_barcodes.csv    \
                  -umi_len= length of UMI (default = 6)  \
