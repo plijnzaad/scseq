@@ -35,6 +35,8 @@ while( not eof $IN1 and not eof $IN2){
 		next;
 	}
 	if ($i == 2){
+          die "expected '+' lines for @fastq" unless  
+              $line1 eq '+' && $line2 eq '+';
 		print  $line2."\n";
 		$i++;
 		next;
