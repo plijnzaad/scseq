@@ -1,36 +1,43 @@
 #!/usr/bin/perl -w -s
-## In CELSeq2, read1 contains (in that order) CBC, UMI, polyT, and read2 contains
-## the mRNA (starts of fragments). 
-## This script puts the CBC and UMI from read1 in front of read2 and prints it
-## to stdout.
-##
-## Original written by Lennart Kester.
-##
-## The current protocols have an artefact that tends to produces long
-## ranges of polyA (and to a lesser extent polyT) Specifying
-## e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.*$
-## TTTTTTTTTTTTTTTTTT.*$ from the read (the quality lines are trimmed in
-## the same way). (The numbers suggested in the usage message correspond
-## to roughly 0.1% of the actual occurrences in the human transcriptome)
-##
-## A more sophisticated trimming is provided by the -xytrim=N option.
-## This trims any occurrence of polyX-polyY, where X and Y are any combination
-## of different homopolymers of length N. E.g. -xytrim=3 would get rid of all
-## AAACCC.*, CCCAAA.*, AAAGGG.*, GGGAAA.*, etc. (N=9 is a more reasonable value).
-##
-## By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
-## to swap them.
-
+# Usage: see usage message
 use tools;
 use strict;
 
 my $version=getversion($0);
 warn "Running $0, version $version\n";
 
-our($fastq, $umi_len, $cbc_len, $trim, $xytrim, $protocol);
+our($fastq, $umi_len, $cbc_len, $trim, $xytrim, $protocol, $read1);
 
-if (!($fastq)){
-  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6 -cbc_len=8 [-trim=A18,T18] [-xytrim=9] [ -protocol=1 ] | gzip >  s_cbc.fastq.gz ";
+if (!($fastq)) {
+  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6 -cbc_len=8 [-trim=A18,T18] [-xytrim=9] [ -protocol=1 ] | gzip >  s_cbc.fastq.gz 
+
+In CELSeq2, read1 contains (in that order) CBC, UMI, polyT, and read2
+contains the mRNA.  This script takes the CBC and UMI from read1, and
+appends e.g.':cbc=TACTGCTG:umi=GTCTTT' onto the read-id.
+(previously they were prepended to the read2 sequence).
+
+The current protocols have an artefact that tends to produces long
+ranges of polyA (and to a lesser extent polyT) Specifying
+e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.*$
+TTTTTTTTTTTTTTTTTT.*$ from the read (the quality lines are trimmed in
+the same way). (The numbers suggested in the usage message correspond
+to roughly 0.1% of the actual occurrences in the human transcriptome)
+
+FIX @@@ A more sophisticated trimming is provided by the -xytrim=N option.
+  This trims any occurrence of polyX-polyY, where X and Y are any combination
+  of different homopolymers of length N. E.g. -xytrim=3 would get rid of all
+  AAACCC.*, CCCAAA.*, AAAGGG.*, GGGAAA.*, etc. (N=9 is a more reasonable value).
+
+By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
+to swap them.
+
+If also read1 should get its read-id changed, use the -read1 option; this will
+write the ammended reads to the (gzipped) fastq file. By default, they will *not* be trimmed
+    if a -trim option is specified; specify -trimread1 if that is desired.
+
+Heavily adapted by <plijnzaad@gmail.com> from the original written by Lennart Kester.
+";
+
 }
 
 $protocol=2 if !defined($protocol);
