@@ -6,10 +6,12 @@ use strict;
 my $version=getversion($0);
 warn "Running $0, version $version\n";
 
-our($fastq, $umi_len, $cbc_len, $trim, $xytrim, $protocol, $read1);
+our($fastq, $umi_len, $cbc_len, $trim, $protocol, $read1);
+
+# -xytrim worked, but didn't help  so was removed at after commit 26547a0374
 
 if (!($fastq)) {
-  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6 -cbc_len=8 [-trim=A18,T18] [-xytrim=9] [ -protocol=1 ] | gzip >  s_cbc.fastq.gz 
+  die "Usage: $0 -fastq=s_R1.fastq[.gz],s_R2.fastq[.gz] -umi_len=6 -cbc_len=8 [-trim=A18,T18] [ -protocol=1 ] | gzip >  s_cbc.fastq.gz 
 
 In CELSeq2, read1 contains (in that order) CBC, UMI, polyT, and read2
 contains the mRNA.  This script takes the CBC and UMI from read1, and
@@ -22,11 +24,6 @@ e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.*$
 TTTTTTTTTTTTTTTTTT.*$ from the read (the quality lines are trimmed in
 the same way). (The numbers suggested in the usage message correspond
 to roughly 0.1% of the actual occurrences in the human transcriptome)
-
-FIX @@@ A more sophisticated trimming is provided by the -xytrim=N option.
-  This trims any occurrence of polyX-polyY, where X and Y are any combination
-  of different homopolymers of length N. E.g. -xytrim=3 would get rid of all
-  AAACCC.*, CCCAAA.*, AAAGGG.*, GGGAAA.*, etc. (N=9 is a more reasonable value).
 
 By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
 to swap them.
@@ -45,7 +42,6 @@ $protocol=2 if !defined($protocol);
 my $regexps ={};
 
 if (defined($trim)) { 
-  warn "finding -trim and -xytrim, -trim will be done first" if defined($xytrim);
   my @nucs=split(',', $trim);
   for my $nt (@nucs) { 
     my($nuc, $num)= ($nt =~ /^([ACGT])(\d+)/);
@@ -59,28 +55,10 @@ if (defined($trim)) {
   }
 }
 
-if(defined($xytrim)) { 
-  use Math::Combinatorics;
-  use Regexp::Optimizer;
-
-  my $ndiff=2;
-  my @combs=combine($ndiff, qw(A C T G));
-  @combs =  map { permute @$_ } @combs;
-  
-  my $o=Regexp::Optimizer->new;
-  
-  for my $comb (@combs) { 
-    my $name=join("_",@$comb)."_";
-    my $quant="{$xytrim,}"; 
-    my $re=(join($quant, @$comb)). "$quant";
-    $regexps->{$name}=  $o->optimize(qr/($re.*)/i);
-  }
-}
-
 my $ntrimmed={};
 my $ntrimmedtotal={};
 my @all=sort keys %$regexps;
-my @regexpids=( grep(/^[ATCG]$/, @all ), grep(/_/, @all )); # first -trim, then -xytrim
+my @regexpids=( grep(/^[ATCG]$/, @all ), grep(/_/, @all )); # first -trim
 
 for my $rid (keys @regexpids) {              # rid=regexp-id
   $ntrimmed->{$rid}=0;
