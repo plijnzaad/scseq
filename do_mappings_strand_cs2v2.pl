@@ -12,7 +12,7 @@ warn "Running $0, version $version\n";
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
-    $BR, $i, $npr, $nsam, $bar, $umi_len, $cbc_len, $trim, $xytrim, $allow_mm, $test, $protocol);
+    $BR, $i, $npr, $nsam, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol);
 
 if (!($r && $f1 && $out && $t)){
   confess "Usage:  $0 -r=REFERENCE     \
@@ -34,12 +34,14 @@ if (!($r && $f1 && $out && $t)){
                  -umi_len= length of UMI (default = 6)  \
                  -cbc_len= length of cell barcode (default: 8) \
                  -trim='A12,T=14' (optional, passed to preprocess_fastq.pl for trimming) \
-                 -xytrim=10 (optional, passed to preprocess_fastq.pl for trimming) \
                  -allow_mm=N (optional, passed to process_sam_cel384v2, allows N mismatches in cell bar codes) \
                  -test=0 or 1 (latter runs in test mode, doesn't call external programs) 
                  -protocol=2 (2 (celseq2): umi=6, cbc=8; 1 (celseq1): umi=4, cbc=8 \
 ";
 }
+
+## the -trimxy option has been removed; it worked, but did not help. See
+## commit 26547a037470f5 (2016-11-02 16:44:17) for code.
 
 # hard coded:
 my $n = 100; # maximal number of unpaired reads to output in XA tag
@@ -64,10 +66,8 @@ $aln_k = 2 if !$aln_k; # edit distance in seed
 $bwaparams=" -q $q -n $aln_n -k $aln_k -l $l " unless $bwaparams;
 
 $trim="" unless $trim;
-$xytrim="" unless $xytrim;
 
-$trim = "-trim=$trim" if $trim;
-$xytrim = "-xytrim=$xytrim" if $xytrim;
+$trim = "--trim $trim" if $trim;
 
 if ($allow_mm) { 
   $allow_mm="-allow_mm=$allow_mm";
@@ -104,7 +104,7 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
     print "*** Seeing file $cbc, not running preprocess_fastq.pl to re-create it\n";
   } else { 
     my($log1, $log2)=(openlog("preprocessLOG-$version"), openlog("preprocessZIP-$version"));
-    my $str = "preprocess_fastq.pl -fastq=$f1,$f2 -umi_len=$umi_len -cbc_len=$cbc_len $trim $xytrim 2>$log1 | $gzip > $cbc 2> $log2 ";
+    my $str = "preprocess_fastq.pl --fastq $f1,$f2 --umi_len $umi_len --cbc_len $cbc_len $trim  2>$log1 | $gzip > $cbc 2> $log2 ";
     print $str."\n";
     execute($str) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);
