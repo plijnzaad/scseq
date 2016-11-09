@@ -13,10 +13,10 @@ use mismatch;
 my $version=getversion($0);
 warn "Running $0, version $version\n";
 
-our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol);
+our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol, $rescue_umi_Ns);
 
 if ( !($sam && $barfile && $umi_len && $cbc_len) ) { 
-  die "Usage: $0 -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=1 ]";
+  die "Usage: $0 -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=1 ] [ -rescue_umi_Ns=1 ]";
 }
 
 $protocol =2 unless $protocol;
@@ -43,6 +43,8 @@ $barcodes_mixedcase=undef;              # not used in remainder, delete to avoid
 my $nreads = 0;
 my $nreverse=0;
 my $ninvalidUMI=0;
+my $nrescued_invalidUMI=0;
+
 my $nignored=0;
 
 my $ninvalidCBC=0;
@@ -168,9 +170,33 @@ CELL:
   foreach my $cbc (@cells) {
     my $n = 0;                             # distinct UMIs for this gene+cell
     my $rc = 0;                            # total reads for this gene+cell
+    my $umihash=$tc->{$gene}{$cbc};
+    my @umis = keys %{$umihash};
+
+    if ( $rescue_umi_Ns ) { 
+      warn "*** this code has not been tested yet";
+      my @Ns=grep(/N/i, @umis);
+      if (@Ns) { 
+        warn "*** gene $gene cell $cbc has several N-containing UMIs, or with a UMI containing several N's:\n"  
+            . join('\n***', @umis) if ( @Ns > 1 || grep(/N.*N/i, @Ns) ); # prolly rare
+        my @noNs=grep(! /N/i, @umis);
+
+        my $h=cleanup_umis(\@noNs, \@Ns, $umihash );
+        
+        $umihash = $h->{umis};
+        $tc->{$gene}{$cbc} = $umihash;
+        @umis = keys %{$umihash};
+
+        $ninvalidUMI += $h->{discarded};
+        $nrescued_invalidUMI += $h->{rescued};
+      }
+    }
+
   UMI:
-    foreach my $umi (keys %{$tc->{$gene}{$cbc}}) {
+    foreach my $umi (@umis) {
       if ($umi =~ /N/i  && $gene !~ /#/) { 
+        confess "gene $gene, cbc $cbc, umi $umi contains N, should not happen when rescueing UMIs" 
+            if $rescue_umi_Ns;    # should have become 'X' or disappeared altogether
         $ninvalidUMI ++ ;
         next UMI;
       }
@@ -186,11 +212,43 @@ CELL:
     print OUTB "\t$n";
     print OUTC "\t$rc";
     print OUTT "\t$txpts";
-  }                                     # CELL
+  }                                     # CBC/CELL
   print OUTT "\n";
   print OUTB "\n";
   print OUTC "\n";
 }                                       # GENE
+
+sub cleanup_umis { 
+  ## costly ...
+  my ($noNs,$Ns, $reads)=@_;
+  my @newNs=();
+  my($nrescued, $ndiscarded)=(0,0);
+
+  for my $N ( @$Ns ) { 
+    my $re=$N;
+    $re =~ s/[Nn]/./g;
+    my @hits=grep( qr/$re/, @$noNs) > 1;
+    ## note: how to compare ANGT with ACNT ? hopefully rare, is warned about
+    if ( @hits == 0 ) {                 # uniq N-containing UMI, rename it
+      my $new=$N;
+      $new =~ s/[Nn]/X/g;   
+      $reads->{$new} = $reads->{$N};
+      delete $reads->{$N};
+      $nrescued++;
+    } elsif (@hits==1) { # e.g. 'AAAN'='AAAG', add its reads to the proper one
+      $reads->{ $hits[0] } += $reads->{$N};      
+      delete $reads->{$N};
+      $nrescued++;
+    } else {
+      delete $reads->{$N};
+      $ndiscarded++;
+    }
+  }
+  { reads => $reads,
+    discarded=>$ndiscarded, 
+    rescued=>$nrescued,
+  };
+}                                       # cleanup_umis
 
 sub stat_format { 
   my($part, $total)=@_;
