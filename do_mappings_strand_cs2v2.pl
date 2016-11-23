@@ -12,7 +12,7 @@ warn "Running $0, version $version\n";
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
-    $BR, $i, $npr, $nsam, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol);
+    $BR, $i, $npr, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol);
 
 if (!($r && $f1 && $out && $t)){
   confess "Usage:  $0 -r=REFERENCE     \
@@ -29,7 +29,6 @@ if (!($r && $f1 && $out && $t)){
                  -l=SEED_LENGTH  (bwa -l option)  \
                  -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
                  -npr=0,1,2: 0: map and process; 1: only map ; 2: only process \
-                 -nsam= 0 or 1 (1: do *not* produce new sam file (calls bwa samse/sampe)    \
                  -bar=cel-seq_barcodes.csv    \
                  -umi_len= length of UMI (default = 6)  \
                  -cbc_len= length of cell barcode (default: 8) \
@@ -53,7 +52,6 @@ $l = 200 if !$l; # seed length
 
 $i = 0 if !$i; # create index
 $npr  = 0 if !$npr;
-$nsam = 0 if !$nsam;
 $ind = "is" if !$ind;
 $protocol = 2 if !$protocol;
 
@@ -116,20 +114,21 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   my($log)=openlog("bwa_alnLOG-$version");
   my $str = "bwa aln -B 0 -t $t $bwaparams $r $cbc > $sai 2>$log";
   print $str."\n";
-  execute($str) if ($test == 0);
-  check_filesize(file=>$sai, minsize=>1000);
   dumplog($log);
+  my $status=execute($str) if ($test == 0);
+  confess "non-zero exit status: $status" unless $status==0;
+  check_filesize(file=>$sai, minsize=>1000);
   
-  if ( $nsam == 0 ){
-    my $compress = "samtools view -h -b - ";
-    my($log1, $log2)=(openlog("bwasamseLOG-$version"),openlog("samtoolsLOG-$version"));
-    $str = "bwa samse -n $n $r $sai $cbc 2>$log1 | $compress > $out.bam 2> $log2";
-    print $str."\n";
-    execute($str) if ($test == 0);
-    check_filesize(file=>"$out.bam",minsize=>1000);
-    dumplog($log1);
-    dumplog($log2);
-  }
+  my $compress = "samtools view -h -b - ";
+  my($log1, $log2)=(openlog("bwasamseLOG-$version"),openlog("samtoolsLOG-$version"));
+  $str = "bwa samse -n $n $r $sai $cbc 2>$log1 | $compress > $out.bam 2> $log2";
+  print $str."\n";
+  my $status=execute($str) if ($test == 0);
+  dumplog($log1);
+  dumplog($log2);
+  check_filesize(file=>"$out.bam",minsize=>1000);
+  confess "non-zero exit status: $status" unless $status==0;
+  unlink($sai);
 }                                       # npr!=2
 
 if ( $npr == 0 || $npr == 2){
