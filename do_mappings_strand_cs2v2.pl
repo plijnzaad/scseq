@@ -123,7 +123,7 @@ if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
   my($log1, $log2)=(openlog("bwasamseLOG-$version"),openlog("samtoolsLOG-$version"));
   $str = "bwa samse -n $n $r $sai $cbc 2>$log1 | $compress > $out.bam 2> $log2";
   print $str."\n";
-  my $status=execute($str) if ($test == 0);
+  $status=execute($str) if ($test == 0);
   dumplog($log1);
   dumplog($log2);
   check_filesize(file=>"$out.bam",minsize=>1000);
