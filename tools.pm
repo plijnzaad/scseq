@@ -433,14 +433,15 @@ sub execute {
   my($cmd)=@_;
   warn "executing $cmd ...\n";
   my $out=`$cmd`;
-
-  if ($?) {
-    warn "Command line '$cmd' exited with non-zero exit-status $?\n. Output was\n$out\n";
+  my $status=$?;
+  if ($status) {
+    warn "Command line '$cmd' exited with non-zero exit-status $status\n. Output was\n$out\n";
   } else {
     if ($out=~ /\S/ ) {
       warn "Command line '$cmd' had following (ignored) output:\n\n$out\n";
     }
   }
+  $status;
 }                                       # execute
 
 sub openlog { 
