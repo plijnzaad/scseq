@@ -6,6 +6,7 @@
 ### 
 ### This script is/was used to find out what a reasonable trimvalue is for the -xytrim option
 ### in add_bc_to_R2.pl
+### (Has since been abandoned, results in miniscule mapping improvements)
 
 use strict;
 
