@@ -116,9 +116,11 @@ my $trimmedlen={};
 my (@lines1, @lines2);
 
 my $nreads=0;
+my $nemptyreads=0;
 
 READ:
 while( not eof $IN1 and not eof $IN2) {
+  $trimmedlen={};
   for(my $i=0; $i<4;$i++) {             # 4 lines at a time
     $lines1[$i] = <$IN1>;
     $lines2[$i] = <$IN2>; 
@@ -147,12 +149,16 @@ while( not eof $IN1 and not eof $IN2) {
   my $line2=$lines2[1];
   for my $rid (@regexpids) { 
     if( $line2 =~ $regexps->{$rid} ) { 
-      my $newlen=length($line2) - length($1);
+      my $newlen=length($line2) - (length($1)+1); # +1 for the \n
       $trimmedlen->{$rid}=$newlen;    # remember for the qual line
-      $line2= substr($line2,0, $newlen);
+      $line2= substr($line2,0, $newlen) . "\n";
       $ntrimmed->{$rid}++;
-      $ntrimmedtotal->{$rid} += length($1)
+      $ntrimmedtotal->{$rid} += length($1);
     }
+  }
+  if ( $line2 eq "\n") { 
+    $nemptyreads ++;
+    next READ;
   }
   $lines2[1]=$line2;
 
@@ -160,7 +166,7 @@ while( not eof $IN1 and not eof $IN2) {
   $line2=$lines2[3];
   for my $rid (@regexpids) {               # trim qual line if seqline was
     if(exists($trimmedlen->{$rid})) { 
-      $line2= substr($line2,0, $trimmedlen->{$rid});
+      $line2= substr($line2,0, $trimmedlen->{$rid}) . "\n";
     }
   }
   $lines2[3]=$line2;
@@ -168,7 +174,6 @@ while( not eof $IN1 and not eof $IN2) {
   print  join("", @lines2);
   print  READ1 join("", @lines1) if $read1;
 
-  $trimmedlen={};
   $nreads++;
 }                                       # READ
 
@@ -184,3 +189,4 @@ for my $rid (@regexpids) {
   warn "trimmed $ntrimmed->{$rid} poly${rid}'s from the reads (totalling $ntrimmedtotal->{$rid} nucleotides)\n"
       if exists($ntrimmed->{$rid}) && $ntrimmed->{$rid} > 0;
 }
+warn "$nemptyreads of the trimmed reads were trimmed to length 0 and therefore discarded\n";
