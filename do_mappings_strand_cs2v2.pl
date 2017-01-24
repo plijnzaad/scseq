@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w -s
-## driver script for single-cell RNAseq scripts, originally written by Dominic Grün
+
+## driver script for the single-cell RNAseq scripts, originally written by Dominic Grün, 
+## heavily modified by Lennert Kestler and Philip Lijnzaad
+
 use tools;
 use Carp;
 use File::Basename;
@@ -14,10 +17,10 @@ $,=" ";         # for interpolating arrays inside strings (default anyway)
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
     $BR, $i, $npr, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol);
 
-if (!($r && $f1 && $out && $t)){
+if (!($r && $f2 && $out && $t)){
   confess "Usage:  $0 -r=REFERENCE     \
-                 -f1=READ1    \
-                 -f2=READ2 (optional)    \
+                 -f1=READ1 (optional if -f2 is already preprocessed into *R2_cbc.fastq.gz)   \
+                 -f2=READ2 (only needed if files not yet preprocessed into *R2_cbc.fastq.gz)  \
                  -out=OUTPUT_PREFIX    \
                  -bwaparams='...' (optional, overrides the -q -n -k -l options) \
                  -outdir=OUTPUT_DIRECTORY (optional)    \

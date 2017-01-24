@@ -34,9 +34,10 @@ By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
 to swap them.
 
 If also read1 should get its read-id changed, use the -read1 option; this will
-write the ammended reads to the (gzipped) fastq file (they will *not* be trimmed
+write the amended reads to the (gzipped) fastq file (they will *not* be trimmed
 if the -trim option is specified, because the meaningful  information,
-if any, is beyond the polyT stretch)
+if any, is beyond the polyT stretch). Note that the transcript is part of read2,
+so this option is rarely needed.
 
 Arguments:
 
