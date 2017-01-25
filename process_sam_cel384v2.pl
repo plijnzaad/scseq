@@ -1,25 +1,52 @@
-#!/usr/bin/perl -w -s
+#!/usr/bin/perl -w
 ## script to demultiplex CELSeq2 single-cell RNA seq data, do the bookkeeping and convert reads to txpt counts
 ## original writtten by Dominic Grün and Lennart Kester
-use tools;
-
 use strict;
 
 use Carp;
 use File::Basename;
+use Getopt::Long;
+
+use tools;
 
 use mismatch;
 
 my $version=getversion($0);
-warn "Running $0, version $version\n";
+warn "Running $0, version $version\nwith arguments:\n  @ARGV\n";
 
-our ($bam, $barfile, $umi_len, $cbc_len, $allow_mm);
+our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $help);
 
-if ( !($bam && $barfile && $umi_len && $cbc_len) ) { 
-  die "Usage: $0 -bam=file.bam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH ";
+my $usage = "
+Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH  [ -allow_mm=1 ] [--prefix name ] file.bam [ file2.bam ...]
+
+Arguments: 
+
+--barcodefile FILE  File with cell bar codes (format: id \\t sequence)
+--umi_len     N     Length of the UMIs
+
+file.bam ...        Name(s) of the bam file(s), typically from several lanes. If
+                    more than one they are assumed to have the same header.
+Options:
+--help              This message
+--allow_mm   N      How many mismatches to allow in the cell barcodes (default: 0)
+
+--prefix     name   Prefix for the four output files: NAME.coutt.csv, NAME.coutb.csv, NAME.coutc.csv and NAME.sout
+                    Default is the name of the first bam file without extension and lane number.
+";
+
+die $usage unless GetOptions('barcodefile=s'=> \$barfile,
+                             'umi_len=i'=> \$umi_len,
+                             'cbc_len=i'=> \$cbc_len,
+                             'allow_mm=i'=> \$allow_mm,
+                             'prefix=s' => \$prefix,
+                             'help|h' => \$help);
+my @bams=@ARGV;
+
+if ( $help  || !(@bams && $barfile && $umi_len && $cbc_len) ) { 
+  die $usage;
 }
 
-my $barcodes_mixedcase = mismatch::readbarcodes_mixedcase($barfile); ## eg. $h->{'AGCGtT') => 'M3'
+my $barcodes_mixedcase = mismatch::readbarcodes($barfile); ## eg. $h->{'AGCGtT') => 'M3'
 my $barcodes = mismatch::mixedcase2upper($barcodes_mixedcase);     ## e.g. $h->{'AGCGTT') => 'M3'
 
 sub bycode {                            # sort the barcodes by their ids (which may contain prefixes)
@@ -54,9 +81,20 @@ my $tc = {};
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
 my $samtools = "samtools";                    # alternative: sambamba, might be faster
-my $cat = "$samtools view ";
 
-open(IN,"$cat $bam |") || die "$bam: $!";
+if (!$prefix) { 
+  $prefix=$bams[0];
+  $prefix =~ s/\.bam//;
+  $prefix =~ s/[-_,.]L0*[1-4][-_,.]//g if @bams > 1;
+  warn "using prefix $prefix\n";
+}
+
+for my $f (@bams) {
+  die "$f: $!" unless $f; 
+}
+my $cmd = "($samtools view -H $bams[0]; " . join("; ", map { "samtools view $_" } @bams) . ")";
+
+open(IN,"$cmd |") || die "$cmd: $!";
 
 SAMLINE:
 while( <IN> ) {
@@ -80,7 +118,7 @@ while( <IN> ) {
     $cbc= $1 if $tag =~ /cbc=([A-Z]+)/i;
     $umi= $1 if $tag =~ /umi=([A-Z]+)/i;
   }
-  die "$0: could not find cbc= or umi= in id $QNAME of file $bam " unless $cbc &&  $umi;
+  die "$0: could not find cbc= or umi= in id $QNAME of the files @bams " unless $cbc &&  $umi;
 
   my $X0 = 0;
   my $dum = 'NA';
@@ -120,22 +158,17 @@ while( <IN> ) {
   $nreads++;
   warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
 }                                       # SAMLINE
-close(IN) || die "$cat $bam: $!";
+close(IN) || die "$cmd: $!";
 
-
-my $coutt = $bam;
-my $coutb = $bam;
-my $coutc = $bam;
-my $sout = $bam;
-
-$coutt   =~ s/(\.)\w+$/\.coutt\.csv/;
-$coutb   =~ s/(\.)\w+$/\.coutb\.csv/;
-$coutc   =~ s/(\.)\w+$/\.coutc\.csv/;
-$sout   =~ s/(\.)\w+$/\.sout/;
+my $coutt   = "$prefix.coutt.csv";
+my $coutb   = "$prefix.coutb.csv";
+my $coutc   = "$prefix.coutc.csv";
+my $sout    = "$prefix.sout";
 
 open(OUTT, "> $coutt") || die "$coutt: $!";
 open(OUTB, "> $coutb") || die "$coutb: $!";
 open(OUTC, "> $coutc") || die "$coutc: $!";
+open (SOUT, "> $sout") || die "$sout: $!";
 
 print OUTB "GENEID";
 print OUTC "GENEID";
@@ -194,7 +227,6 @@ sub stat_format {
   sprintf("%s / %s   = %.1f %%\n", commafy($part), commafy($total), 100*$part/$total);
 }
 
-open (SOUT, "> $sout") || die "$sout: $!";
 
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
