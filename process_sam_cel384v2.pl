@@ -13,13 +13,11 @@ use mismatch;
 my $version=getversion($0);
 warn "Running $0, version $version\n";
 
-our ($sam, $barfile, $umi_len, $cbc_len, $allow_mm, $protocol);
+our ($bam, $barfile, $umi_len, $cbc_len, $allow_mm);
 
-if ( !($sam && $barfile && $umi_len && $cbc_len) ) { 
-  die "Usage: $0 -sam=sam.sam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH [ -protocol=1 ]";
+if ( !($bam && $barfile && $umi_len && $cbc_len) ) { 
+  die "Usage: $0 -bam=file.bam -barfile=barfile.csv [-allow_mm=1] -umi_len=UMILENGTH -cbc_len=CBCLENGTH ";
 }
-
-$protocol =2 unless $protocol;
 
 my $barcodes_mixedcase = mismatch::readbarcodes_mixedcase($barfile); ## eg. $h->{'AGCGtT') => 'M3'
 my $barcodes = mismatch::mixedcase2upper($barcodes_mixedcase);     ## e.g. $h->{'AGCGTT') => 'M3'
@@ -55,11 +53,10 @@ my $nunimapped=0;
 my $tc = {};
 
 # read through sam file create a hash with all genes and cells and extract mapped reads into the hash
-my $cat = "cat ";
 my $samtools = "samtools";                    # alternative: sambamba, might be faster
-$cat = "$samtools view " if $sam =~ /\.bam$/;
+my $cat = "$samtools view ";
 
-open(IN,"$cat $sam |") || die "$sam: $!";
+open(IN,"$cat $bam |") || die "$bam: $!";
 
 SAMLINE:
 while( <IN> ) {
@@ -83,7 +80,7 @@ while( <IN> ) {
     $cbc= $1 if $tag =~ /cbc=([A-Z]+)/i;
     $umi= $1 if $tag =~ /umi=([A-Z]+)/i;
   }
-  die "$0: could not find cbc= or umi= in id $QNAME of file $sam " unless $cbc &&  $umi;
+  die "$0: could not find cbc= or umi= in id $QNAME of file $bam " unless $cbc &&  $umi;
 
   my $X0 = 0;
   my $dum = 'NA';
@@ -123,13 +120,13 @@ while( <IN> ) {
   $nreads++;
   warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
 }                                       # SAMLINE
-close(IN) || die "$cat $sam: $!";
+close(IN) || die "$cat $bam: $!";
 
 
-my $coutt = $sam;
-my $coutb = $sam;
-my $coutc = $sam;
-my $sout = $sam;
+my $coutt = $bam;
+my $coutb = $bam;
+my $coutc = $bam;
+my $sout = $bam;
 
 $coutt   =~ s/(\.)\w+$/\.coutt\.csv/;
 $coutb   =~ s/(\.)\w+$/\.coutb\.csv/;
