@@ -1,49 +1,80 @@
-#!/usr/bin/perl -w -s
-
+#!/usr/bin/perl -w
 ## driver script for the single-cell RNAseq scripts, originally written by Dominic Grün, 
 ## heavily modified by Lennert Kestler and Philip Lijnzaad
-
-use tools;
+use strict;
 use Carp;
 use File::Basename;
+use Getopt::Long;
 
-use strict;
+use tools;
 
 my $version=getversion($0);
-warn "Running $0, version $version\n";
+warn "Running $0, version $version\nwith arguments:\n @ARGV\n";
 
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
-    $BR, $i, $npr, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol);
+    $i, $npr, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol, $help);
 
-if (!($r && $f2 && $out && $t)){
-  confess "Usage:  $0 -r=REFERENCE     \
-                 -f1=READ1 (optional if -f2 is already preprocessed into *R2_cbc.fastq.gz)   \
-                 -f2=READ2 (only needed if files not yet preprocessed into *R2_cbc.fastq.gz)  \
-                 -out=OUTPUT_PREFIX    \
-                 -bwaparams='...' (optional, overrides the -q -n -k -l options) \
-                 -outdir=OUTPUT_DIRECTORY (optional)    \
-                 -t=THREADS  (0)  \
-                 -ind=is or bwtsw (default: is (<2GB reference)    \
-                 -q=PHRED_QUALITY_FOR_TRIMMING (0..62, default 0)   \
-                 -aln_n=edit distance  (bwa aln option -n, default 0.04)  \
-                 -aln_k=edit distance in seed  (bwa aln option -k, default 2)   \
-                 -l=SEED_LENGTH  (bwa -l option)  \
-                 -i= 1 or 0 (1 if indexing is required, runs bwa index )    \
-                 -npr=0,1,2: 0: map and process; 1: only map ; 2: only process \
-                 -bar=cel-seq_barcodes.csv    \
-                 -umi_len= length of UMI (default = 6)  \
-                 -cbc_len= length of cell barcode (default: 8) \
-                 -trim='A12,T=14' (optional, passed to preprocess_fastq.pl for trimming) \
-                 -allow_mm=N (optional, passed to process_sam_cel384v2, allows N mismatches in cell bar codes) \
-                 -test=0 or 1 (latter runs in test mode, doesn't call external programs) 
-                 -protocol=2 (2 (celseq2): umi=6, cbc=8; 1 (celseq1): umi=4, cbc=8 \
+my $script=basename($0);
+
+my $usage = "Usage:  $script ARGUMENTS  [ 2> logfile ]
+
+Mandatory arguments:
+
+  --r file.fa            Fasta file containing the reference transcriptome
+  --f1 FILE_R1.fastq.gz  File with R1 reads (optional if -f2 is already preprocessed into *R2_cbc.fastq.gz)   
+  --f2 FILE_R2.fastq.gz  FILE with R2 reads (only needed if files not yet preprocessed into *R2_cbc.fastq.gz)  
+  --out OUTPUT_PREFIX    Prefix for the resulting bam file
+
+Optional arguments:
+
+  --outdir OUTPUT_DIRECTORY (optional) Directory into which to put results
+  --t THREADS  Number of threads bwa can use  (default 1)
+  --ind 'is' or 'bwtsw' (default: 'is' (<2GB reference)    
+  --q PHRED_QUALITY_FOR_TRIMMING (0..62, default 0)   
+  --aln_n edit distance  (bwa aln option -n, default 0.04)  
+  --aln_k edit distance in seed  (bwa aln option -k, default 2)   
+  --l SEED_LENGTH  (bwa -l option)  
+  --i 1 or 0 (1 if indexing is required, runs bwa index on reference transcriptome )
+  --bwaparams '...' (optional, overrides the -q -n -k -l options) 
+  --npr 0,1,2: 0: map and process; 1: only map ; 2: only process 
+  --bar file  Name of file with CEL-seq2 barcodes (format: id \\t sequence)
+  --umi_len N length of UMI (default = 6)  
+  --cbc_len N length of cell barcode (default: 8) 
+  --trim string Passed to preprocess_fastq.pl for trimming. Example: 'A12,T=14'
+  --allow_mm N Passed to process_sam_cel384v2, allows N mismatches in cell bar codes
+  --test N   0 or 1 (latter runs in test mode, doesn't call external programs) 
+  --protocol 1 or 2  Default 2 (celseq2): umi=6, cbc=8; 1 (celseq1): umi=4, cbc=8 
 ";
-}
 
-## the -trimxy option has been removed; it worked, but did not help. See
-## commit 26547a037470f5 (2016-11-02 16:44:17) for code.
+die $usage unless GetOptions(
+  "r|ref=s"	=> \$r,
+  "1|f1|read1=s"=> \$f1,
+  "2|f2|read2=s"=> \$f2,
+  "out|prefix=s"=> \$out,
+  "bwaparams=s"	=> \$bwaparams,
+  "outdir=s"	=> \$outdir,
+  "t|threads=i"	=> \$t,
+  "ind|indextype=s"=> \$ind,
+  "q|phred_quality=i" => \$q,
+  "aln_n=f"	=> \$aln_n,
+  "aln_k=i"	=> \$aln_k,
+  "l|seedlen=i"	=> \$l,
+  "i|doindexing=i"  => \$i,
+  "npr|processing=i"=> \$npr,
+  "bar|barcodes=s"  => \$bar,
+  "umi_len=i"	=> \$umi_len,
+  "cbc_len=i"	=> \$cbc_len,
+  "trim=s"	=> \$trim,
+  "allow_mm=i"	=> \$allow_mm,
+  "test=i"	=> \$test,
+  "protocol=i"	=> \$protocol,
+  "h|help"	=> \$help       
+    );
+
+die $usage if ($help || !($r && $f2 && $out));
+die "Don't mix any of -[ql] or aln_{k,n} with --bwaparams! \n" . $usage if ( $bwaparams && ($q || $aln_n || $aln_k || $l)  );
 
 # hard coded:
 my $n = 100; # maximal number of unpaired reads to output in XA tag
@@ -52,8 +83,8 @@ my $N = 100; # maximal number of paired reads to output in XA tag
 $q = 0 if !$q; # base quality cutoff for trimming
 $l = 200 if !$l; # seed length
 
-
-$i = 0 if !$i; # create index
+$t=1 if !$t;                            # threads
+$i = 0 if !$i;                          # create index
 $npr  = 0 if !$npr;
 $ind = "is" if !$ind;
 $protocol = 2 if !$protocol;
