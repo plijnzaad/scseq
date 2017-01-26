@@ -131,7 +131,8 @@ while( <IN> ) {
   
   $nmapped += ($X0 > 0); # $X0 is number of locations to which the read maps
   $nunimapped += ($X0 == 1);
-  $nreverse += ($FLAG == 16);
+  my $reverse=!!($FLAG & 16);
+  $nreverse +=  $reverse;
 
   if (! exists $barcodes->{$cbc} && $allow_mm) { 
     $cbc=mismatch::rescue($cbc, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
@@ -140,7 +141,7 @@ while( <IN> ) {
 
   ## count only reads with valid barcode, uniquely mapping in the sense orientation:
   if ($cbc && exists $barcodes->{$cbc}){
-    if ($X0 == 1 && $FLAG != 16){ # flag==16: read is reverse strand
+    if ($X0 == 1 && ! $reverse){ 
       $tc->{$RNAME}{$cbc}{$umi}++; 
       # note: invalid umi's are filtered out later!
     } else {
@@ -149,7 +150,7 @@ while( <IN> ) {
       ## keep track of some subsets of this
       $tc->{'#unmapped'}{$cbc}{$umi} += ($X0 == 0 );
       $tc->{'#multimapped'}{$cbc}{$umi} += ($X0 > 1 );
-      $tc->{'#reverse'}{$cbc}{$umi} += ($FLAG != 16); # (may overlap with multimappers)
+      $tc->{'#reverse'}{$cbc}{$umi} += $reverse; # (may overlap with multimappers)
     }
   } else { 
     $ninvalidCBC++;
