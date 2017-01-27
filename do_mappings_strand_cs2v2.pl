@@ -174,7 +174,7 @@ if ( $npr != 2 ) {                      # npr is 0 or 1: do mapping
 
 if ( $npr == 0 || $npr == 2){
   my($log)=openlog("process_samBOTH-$version");
-  my $cmdline = "process_sam_cel384v2.pl --barcodefile $bar --umi_len $umi_len --cbc_len $cbc_len $allow_mm $out.bam > $log 2>&1 ";
+  my $cmdline = "process_sam_cel384v2.pl --ref=$r --barcodefile=$bar --umi_len=$umi_len --cbc_len=$cbc_len $allow_mm $out.bam > $log 2>&1 ";
   print $cmdline."\n";
   execute($cmdline) if ($test == 0);
   dumplog($log);

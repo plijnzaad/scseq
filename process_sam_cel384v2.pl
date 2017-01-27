@@ -14,24 +14,25 @@ use mismatch;
 my $version=getversion($0);
 warn "Running $0, version $version\nwith arguments:\n  @ARGV\n";
 
-our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $help);
+our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $ref, $help);
 
 my $usage = "
 Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH  [ -allow_mm=1 ] [--prefix name ] file.bam [ file2.bam ...]
 
 Arguments: 
 
---barcodefile FILE  File with cell bar codes (format: id \\t sequence)
---umi_len     N     Length of the UMIs
+--barcodefile=FILE  File with cell bar codes (format: id \\t sequence)
+--umi_len=N         Length of the UMIs
 
 file.bam ...        Name(s) of the bam file(s), typically from several lanes. If
                     more than one they are assumed to have the same header.
 Options:
 --help              This message
---allow_mm   N      How many mismatches to allow in the cell barcodes (default: 0)
+--allow_mm=N        How many mismatches to allow in the cell barcodes (default: 0)
 
---prefix     name   Prefix for the four output files: NAME.coutt.csv, NAME.coutb.csv, NAME.coutc.csv and NAME.sout
+--prefix=name       Prefix for the four output files: NAME.coutt.csv, NAME.coutb.csv, NAME.coutc.csv and NAME.sout
                     Default is the name of the first bam file without extension and lane number.
+--ref=name          Name of the reference genome (only for logging)
 ";
 
 die $usage unless GetOptions('barcodefile=s'=> \$barfile,
@@ -39,6 +40,7 @@ die $usage unless GetOptions('barcodefile=s'=> \$barfile,
                              'cbc_len=i'=> \$cbc_len,
                              'allow_mm=i'=> \$allow_mm,
                              'prefix=s' => \$prefix,
+                             'ref=s' => \$ref,
                              'help|h' => \$help);
 my @bams=@ARGV;
 
@@ -96,11 +98,16 @@ my $cmd = "($samtools view -H $bams[0]; " . join("; ", map { "samtools view $_" 
 
 open(IN,"$cmd |") || die "$cmd: $!";
 
+my $nrefgenes=0;
+my $nERCCs=0;
+
 SAMLINE:
 while( <IN> ) {
   chomp $_;
 
   if (substr($_,1,2) eq "SQ" ){
+    my (@tag, $name)=split("\t", $_);
+    if ($name =~ /ERCC/) { $nERCCs++; } else { $nrefgenes ++; }
     next SAMLINE;
   }
 
@@ -228,7 +235,10 @@ sub stat_format {
   sprintf("%s / %s   = %.1f %%\n", commafy($part), commafy($total), 100*$part/$total);
 }
 
+$ref = "unknown" unless $ref;
 
+print SOUT "reference transcriptome: $ref\n";
+print SOUT "        contains $nERCCs ERCCs and " . commafy($nERCCs) . "\n";
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
