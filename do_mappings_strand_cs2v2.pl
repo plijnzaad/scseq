@@ -14,7 +14,7 @@ warn "Running $0, version $version\nwith arguments:\n @ARGV\n";
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
-    $i, $npr, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol, $help);
+    $i, $npr, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol, $help, $cbc);
 
 my $script=basename($0);
 
@@ -23,8 +23,9 @@ my $usage = "Usage:  $script ARGUMENTS  [ 2> logfile ]
 Mandatory arguments:
 
   --r file.fa            Fasta file containing the reference transcriptome
-  --f1 FILE_R1.fastq.gz  File with R1 reads (optional if -f2 is already preprocessed into *R2_cbc.fastq.gz)   
-  --f2 FILE_R2.fastq.gz  FILE with R2 reads (only needed if files not yet preprocessed into *R2_cbc.fastq.gz)  
+  --f1 FILE_R1.fastq.gz  Input file with R1 reads (if read1 and read2 not yet preprocessed into *_cbc.fastq.gz)   
+  --f2 FILE_R2.fastq.gz  Input file with R2 reads (if read1 and read2 not yet preprocessed into *_cbc.fastq.gz)   
+  --cbc FILE_cbc.fastq.gz Input file with reads + barcodes  (if --f2 and --f2 are already preprocessed into _cbc.fastq.gz)
   --out OUTPUT_PREFIX    Prefix for the resulting bam file
 
 Optional arguments:
@@ -52,6 +53,7 @@ die $usage unless GetOptions(
   "r|ref=s"	=> \$r,
   "1|f1|read1=s"=> \$f1,
   "2|f2|read2=s"=> \$f2,
+  "cbc=s"=>     => \$cbc,
   "out|prefix=s"=> \$out,
   "bwaparams=s"	=> \$bwaparams,
   "outdir=s"	=> \$outdir,
@@ -73,7 +75,8 @@ die $usage unless GetOptions(
   "h|help"	=> \$help       
     );
 
-die $usage if ($help || !($r && $f2 && $out));
+die $usage if ($help || !$r || !$out);
+die "Specify either --cbc, or --f1 and --f2; \nin the latter case\n" . $usage if (!!($f1 && $f2)  == !!$cbc);
 die "Don't mix any of -[ql] or aln_{k,n} with --bwaparams! \n" . $usage if ( $bwaparams && ($q || $aln_n || $aln_k || $l)  );
 
 # hard coded:
@@ -121,27 +124,26 @@ if ($i){
   execute($str) if ($test == 0);
 }
 
-my ($name, $path, $ext)=fileparse($f2, ('.fastq', '.fastq.gz'));
-
-my $cbc = "$path/${name}_cbc.fastq";       # output from preprocess_fastq.pl, input to bwa
-my $gzip = " cat ";
-
-if ( $ext =~ /\.gz/ ) { 
-  $cbc .= ".gz";
-  $gzip = " gzip ";
-}
-
-if ( $npr != 2 ) {                       # npr is 0 or 1: do mapping
-  if ( -f $cbc  ) { 
-    print "*** Seeing file $cbc, not running preprocess_fastq.pl to re-create it\n";
-  } else { 
+if ( $npr != 2 ) {                      # npr is 0 or 1: do mapping
+my ($name, $path, $ext);
+  if ( $f1 && $f2  ) {                  # create cbc file now
+  ($name, $path, $ext)=fileparse($f2, '.fastq.gz');
+    die "$f2: extension must be .fastq.gz " unless $ext eq '.fastq.gz';
+    $cbc = "$path/${name}_cbc.fastq.gz";
+    die "$f1: $!" unless -f $f1;
+    die "$f2: $!" unless -f $f2;
+    print "Creating file $cbc from $f1 and $f2 ...\n";
     my($log1, $log2)=(openlog("preprocessLOG-$version"), openlog("preprocessZIP-$version"));
-    my $str = "preprocess_fastq.pl --fastq $f1,$f2 --umi_len $umi_len --cbc_len $cbc_len $trim  2>$log1 | $gzip > $cbc 2> $log2 ";
+    my $str = "preprocess_fastq.pl --fastq $f1,$f2 --umi_len $umi_len --cbc_len $cbc_len $trim  2>$log1 | gzip > $cbc 2> $log2 ";
     print $str."\n";
     execute($str) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);
     dumplog($log1);
     dumplog($log2);
+  } else {
+    ($name, $path, $ext)=fileparse($cbc, '_cbc.fastq.gz');
+    die "$cbc: extension must be _cbc.fastq.gz" unless $ext eq '_cbc.fastq.gz';
+    die "$cbc: $!" unless -f $cbc;
   }
 
   my $sai = "$outdir/$name.sai"; 

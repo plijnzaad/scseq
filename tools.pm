@@ -445,6 +445,7 @@ sub execute {
 }                                       # execute
 
 sub openlog { 
+  ## open log for later inclusion in over-all log
   my($template)=@_;
 
   $template .= "-XXXXXXXX";
@@ -463,6 +464,7 @@ sub openlog {
 }                                       # openlog
 
 sub dumplog {
+  ## take log file opened by openlog(), dump to stdout, and remove
   my($log)=@_;
   if ( ! -r $log) { warn "logfile $log does not exist"; return; }
   if ( -z $log) { unlink($log); return; }
