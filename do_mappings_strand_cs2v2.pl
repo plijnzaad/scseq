@@ -125,9 +125,9 @@ if ($i){
 }
 
 if ( $npr != 2 ) {                      # npr is 0 or 1: do mapping
-my ($name, $path, $ext);
+  my ($name, $path, $ext);
   if ( $f1 && $f2  ) {                  # create cbc file now
-  ($name, $path, $ext)=fileparse($f2, '.fastq.gz');
+    ($name, $path, $ext)=fileparse($f2, '.fastq.gz');
     die "$f2: extension must be .fastq.gz " unless $ext eq '.fastq.gz';
     $cbc = "$path/${name}_cbc.fastq.gz";
     die "$f1: $!" unless -f $f1;
@@ -144,24 +144,29 @@ my ($name, $path, $ext);
     ($name, $path, $ext)=fileparse($cbc, '_cbc.fastq.gz');
     die "$cbc: extension must be _cbc.fastq.gz" unless $ext eq '_cbc.fastq.gz';
     die "$cbc: $!" unless -f $cbc;
-  }
+  } 
 
   my $sai = "$outdir/$name.sai"; 
   my($log)=openlog("bwa_alnLOG-$version");
-  my $str = "bwa aln -B 0 -t $t $bwaparams $r $cbc > $sai 2>$log";
-  print $str."\n";
+  my $mapping = "bwa aln -B 0 -t $t $bwaparams $r $cbc ";
+  my $cmdline= "$mapping > $sai 2>$log";
+  print "$cmdline\n";
   dumplog($log);
-  my $status=execute($str) if ($test == 0);
+  my $status=execute($cmdline) if ($test == 0);
   confess "non-zero exit status: $status" unless $status==0;
   check_filesize(file=>$sai, minsize=>1000);
   
-  my $compress = "samtools view -h -b - ";
-  my($log1, $log2)=(openlog("bwasamseLOG-$version"),openlog("samtoolsLOG-$version"));
-  $str = "bwa samse -n $n $r $sai $cbc 2>$log1 | $compress > $out.bam 2> $log2";
-  print $str."\n";
-  $status=execute($str) if ($test == 0);
-  dumplog($log1);
-  dumplog($log2);
+  my $sam2bam = "samtools view -h -b - ";
+  my($samse_log, $PGline_log, $sam2bam_log)=(openlog("bwasamse-LOG-$version"),
+                                             openlog("addbwaPGline-LOG-$version"),
+                                             openlog("sam2bam-LOG-$version"));
+  $cmdline = "bwa samse -n $n $r $sai $cbc 2>$samse_log | add_bwa_PG_line.pl $mapping 2> $PGline_log | $sam2bam > $out.bam 2> $sam2bam_log";
+
+  print $cmdline."\n";
+  $status=execute($cmdline) if ($test == 0);
+  dumplog($samse_log);
+  dumplog($PGline_log);
+  dumplog($sam2bam_log);
   check_filesize(file=>"$out.bam",minsize=>1000);
   confess "non-zero exit status: $status" unless $status==0;
   unlink($sai);
@@ -169,8 +174,8 @@ my ($name, $path, $ext);
 
 if ( $npr == 0 || $npr == 2){
   my($log)=openlog("process_samBOTH-$version");
-  my $str = "process_sam_cel384v2.pl --barcodefile $bar --umi_len $umi_len --cbc_len $cbc_len $allow_mm $out.bam > $log 2>&1 ";
-  print $str."\n";
-  execute($str) if ($test == 0);
+  my $cmdline = "process_sam_cel384v2.pl --barcodefile $bar --umi_len $umi_len --cbc_len $cbc_len $allow_mm $out.bam > $log 2>&1 ";
+  print $cmdline."\n";
+  execute($cmdline) if ($test == 0);
   dumplog($log);
 }                                       # if ( $npr == 0 || $npr == 2)
