@@ -8,7 +8,7 @@ my $version=getversion($0);
 warn "Running $0, version $version\n";
 warn "Arguments: @ARGV\n";
 
-my($fastq, $umi_len, $cbc_len, $trim, $CBCbeforeUMI, $read1, $help);
+my($fastq, $umi_len, $cbc_len, $polytrim, $CBCbeforeUMI, $read1, $help);
 
 $CBCbeforeUMI=0;                        # CELSeq2
 
@@ -48,7 +48,7 @@ Arguments:
 Options: 
 
     --read1 s_R1_cbc.fastqc.gz     # also save the read1's with the new id
-    --trim=A18,T18                 # trim read2 of any stretches of 18 A's and 18 T's
+    --polytrim=A18,T14             # trim read2 of any stretches of 18 A's and 14 T's (in that order) and beyond
     --CBCbeforeUMI                 # CELseq2 has first the  UMI, then the CBC, this option inverts that
 
 Heavily adapted by <plijnzaad\@gmail.com> from the original written by Lennart Kester.
@@ -58,7 +58,7 @@ die $usage unless GetOptions('fastq=s'=> \$fastq,
                              'umi_len=i'=> \$umi_len,
                              'cbc_len=i'=> \$cbc_len,
                              'read1=s'=> \$read1,
-                             'trim=s' => \$trim,
+                             'polytrim=s' => \$polytrim,
                              'CBCbeforeUMI' => \$CBCbeforeUMI,
                              'help|h' => \$help);
 die $usage if $help;
@@ -66,8 +66,8 @@ die $usage unless $fastq && defined($umi_len) && defined($cbc_len);
 
 my $regexps ={};
 
-if (defined($trim)) { 
-  my @nucs=split(',', $trim);
+if (defined($polytrim)) { 
+  my @nucs=split(',', $polytrim);
   for my $nt (@nucs) { 
     my($nuc, $num)= ($nt =~ /^([ACGT])(\d+)/);
     die "$0: expected string like -trim=A18,T18" unless $nuc && $num;
@@ -109,7 +109,7 @@ if($read1) {
 }
 
 my ($line1, $line2, $bar);
-my $trimmedlen={};
+my $polytrimmedlen={};
 
 my (@lines1, @lines2);
 
@@ -118,7 +118,7 @@ my $nemptyreads=0;
 
 READ:
 while( not eof $IN1 and not eof $IN2) {
-  $trimmedlen={};
+  $polytrimmedlen={};
   for(my $i=0; $i<4;$i++) {             # 4 lines at a time
     $lines1[$i] = <$IN1>;
     $lines2[$i] = <$IN2>; 
@@ -148,7 +148,7 @@ while( not eof $IN1 and not eof $IN2) {
   for my $rid (@regexpids) { 
     if( $line2 =~ $regexps->{$rid} ) { 
       my $newlen=length($line2) - (length($1)+1); # +1 for the \n
-      $trimmedlen->{$rid}=$newlen;    # remember for the qual line
+      $polytrimmedlen->{$rid}=$newlen;    # remember for the qual line
       $line2= substr($line2,0, $newlen) . "\n";
       $ntrimmed->{$rid}++;
       $ntrimmedtotal->{$rid} += length($1);
@@ -163,8 +163,8 @@ while( not eof $IN1 and not eof $IN2) {
 ### line with Phred qualities:
   $line2=$lines2[3];
   for my $rid (@regexpids) {               # trim qual line if seqline was
-    if(exists($trimmedlen->{$rid})) { 
-      $line2= substr($line2,0, $trimmedlen->{$rid}) . "\n";
+    if(exists($polytrimmedlen->{$rid})) { 
+      $line2= substr($line2,0, $polytrimmedlen->{$rid}) . "\n";
     }
   }
   $lines2[3]=$line2;

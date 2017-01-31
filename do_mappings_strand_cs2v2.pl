@@ -14,7 +14,7 @@ warn "Running $0, version $version\nwith arguments:\n @ARGV\n";
 $,=" ";         # for interpolating arrays inside strings (default anyway)
 
 our($r, $f1, $f2, $out, $bwaparams, $outdir, $t, $ind, $q, $aln_n, $aln_k, $l,
-    $i, $npr, $bar, $umi_len, $cbc_len, $trim, $allow_mm, $test, $protocol, $help, $cbc);
+    $i, $npr, $bar, $umi_len, $cbc_len, $polytrim, $allow_mm, $test, $protocol, $help, $cbc);
 
 my $script=basename($0);
 
@@ -43,7 +43,7 @@ Optional arguments:
   --bar file  Name of file with CEL-seq2 barcodes (format: id \\t sequence)
   --umi_len N length of UMI (default = 6)  
   --cbc_len N length of cell barcode (default: 8) 
-  --trim string Passed to preprocess_fastq.pl for trimming. Example: 'A12,T=14'
+  --polytrim string Passed to preprocess_fastq.pl for trimming. Example: 'A12,T=14'
   --allow_mm N Passed to process_sam_cel384v2, allows N mismatches in cell bar codes
   --test N   0 or 1 (latter runs in test mode, doesn't call external programs) 
   --protocol 1 or 2  Default 2 (celseq2): umi=6, cbc=8; 1 (celseq1): umi=4, cbc=8 
@@ -68,7 +68,7 @@ die $usage unless GetOptions(
   "bar|barcodes=s"  => \$bar,
   "umi_len=i"	=> \$umi_len,
   "cbc_len=i"	=> \$cbc_len,
-  "trim=s"	=> \$trim,
+  "polytrim=s"	=> \$polytrim,
   "allow_mm=i"	=> \$allow_mm,
   "test=i"	=> \$test,
   "protocol=i"	=> \$protocol,
@@ -100,9 +100,9 @@ $aln_k = 2 if !$aln_k; # edit distance in seed
 
 $bwaparams=" -q $q -n $aln_n -k $aln_k -l $l " unless $bwaparams;
 
-$trim="" unless $trim;
+$polytrim="" unless $polytrim;
 
-$trim = "--trim $trim" if $trim;
+$polytrim = "--polytrim $polytrim" if $polytrim;
 
 if ($allow_mm) { 
   $allow_mm="--allow_mm $allow_mm";
@@ -134,7 +134,7 @@ if ( $npr != 2 ) {                      # npr is 0 or 1: do mapping
     die "$f2: $!" unless -f $f2;
     print "Creating file $cbc from $f1 and $f2 ...\n";
     my($log1, $log2)=(openlog("preprocessLOG-$version"), openlog("preprocessZIP-$version"));
-    my $str = "preprocess_fastq.pl --fastq $f1,$f2 --umi_len $umi_len --cbc_len $cbc_len $trim  2>$log1 | gzip > $cbc 2> $log2 ";
+    my $str = "preprocess_fastq.pl --fastq $f1,$f2 --umi_len $umi_len --cbc_len $cbc_len $polytrim  2>$log1 | gzip > $cbc 2> $log2 ";
     print $str."\n";
     execute($str) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);
