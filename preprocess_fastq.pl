@@ -15,7 +15,7 @@ $CBCbeforeUMI=0;                        # CELSeq2
 ## -xytrim worked, but didn't help so was removed at after commit 26547a0374 (2016-11-02 16:44:17)
 
 my $usage = "
-Usage: $0 --fastq s_R1.fastq[.gz],s_R2.fastq[.gz] --umi_len 6 --cbc_len 8  [ OPTIONS ]  | gzip >  s_cbc.fastq.gz 
+Usage: $0 --fastq s_R1.fastq.gz,s_R2.fastq.gz --umi_len 6 --cbc_len 8  [ OPTIONS ]  | gzip >  s_cbc.fastq.gz 
 
 In CELSeq2, read1 contains (in that order) CBC, UMI, polyT, whereas read2
 contains the mRNA.  This script takes the CBC and UMI from read1, and
@@ -41,9 +41,9 @@ so this option is rarely needed.
 
 Arguments:
 
-    --fastq s_R1.fastq[.gz],s_R2.fastq[.gz] # input files
-    --umi_len 6      # length of the UMI
-    --cbc_len 8      # length of the cell barcode
+    --fastq s_R1.fastq.gz,s_R2.fastq.gz # input files
+    --umi_len=6      # length of the UMI
+    --cbc_len=8      # length of the cell barcode
 
 Options: 
 
@@ -95,15 +95,13 @@ die "$0: no -cbc_len specified" unless $cbc_len > 0; # length of the cell bar co
 
 my $prefix_len = $cbc_len + $umi_len;
 
+die "$fastq: input files must be gzipped " unless $fastq =~ /\.gz,.*\.gz$/;
+
 my @fastq = split(/\,/,$fastq);
 
-# open fastq file
-my $cat = "cat ";
-$cat = "zcat " if $fastq =~ /\.gz/;
-
 my($IN1, $IN2);
-open($IN1, "$cat $fastq[0] |") || die "$0: $fastq[0]: $!";
-open($IN2, "$cat $fastq[1] |") || die "$0: $fastq[1]: $!";
+open($IN1, "zcat $fastq[0] |") || die "$0: $fastq[0]: $!";
+open($IN2, "zcat $fastq[1] |") || die "$0: $fastq[1]: $!";
 
 if($read1) { 
   $read1 =~ s/\.fastq.*$//i;
