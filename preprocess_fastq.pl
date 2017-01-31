@@ -19,16 +19,16 @@ Usage: $0 --fastq s_R1.fastq.gz,s_R2.fastq.gz --umi_len 6 --cbc_len 8  [ OPTIONS
 
 In CELSeq2, read1 contains (in that order) CBC, UMI, polyT, whereas read2
 contains the mRNA.  This script takes the CBC and UMI from read1, and
-appends e.g.':cbc=TACTGCTG:umi=GTCTTT' onto the read-id(previously they
-were prepended to the read2 sequence). The resulting FASTQ file is written
-to stdout.
+appends e.g.':cbc=TACTGCTG:umi=GTCTTT' onto the read-id. The resulting
+FASTQ file is written to stdout (where it usually will be gzipped before
+being written to disk)
 
 The current protocols have an artefact that tends to produces long
 stretches of polyA (and to a lesser extent polyT). Specifying
 e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.* and
 TTTTTTTTTTTTTTTTTT.* from read2. The quality lines are trimmed in the same
-way. (The numbers suggested in the usage message correspond to roughly
-0.1% of the actual occurrences in the human transcriptome).
+way. (These numbers correspond to roughly 0.1% of the actual occurrences
+in the human transcriptome).
 
 By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
 to swap them.
@@ -37,7 +37,7 @@ If also read1 should get its read-id changed, use the -read1 option; this will
 write the amended reads to the (gzipped) fastq file (they will *not* be trimmed
 if the -trim option is specified, because the meaningful  information,
 if any, is beyond the polyT stretch). Note that the transcript is part of read2,
-so this option is rarely needed.
+so this option is prolly only needed when debugging script, lab protocol or both.
 
 Arguments:
 
@@ -48,7 +48,7 @@ Arguments:
 Options: 
 
     --read1 s_R1_cbc.fastqc.gz     # also save the read1's with the new id
-    --polytrim=A18,T14             # trim read2 of any stretches of 18 A's and 14 T's (in that order) and beyond
+    --polytrim=G12,A14             # trim read2 of any stretches of 12 G's and 14 A's (in that order) and beyond
     --CBCbeforeUMI                 # CELseq2 has first the  UMI, then the CBC, this option inverts that
 
 Heavily adapted by <plijnzaad\@gmail.com> from the original written by Lennart Kester.
