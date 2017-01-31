@@ -134,7 +134,7 @@ if ( $npr != 2 ) {                      # npr is 0 or 1: do mapping
     die "$f2: $!" unless -f $f2;
     print "Creating file $cbc from $f1 and $f2 ...\n";
     my($log1, $log2)=(openlog("preprocessLOG-$version"), openlog("preprocessZIP-$version"));
-    my $str = "preprocess_fastq.pl --fastq $f1,$f2 --umi_len $umi_len --cbc_len $cbc_len $polytrim  2>$log1 | gzip > $cbc 2> $log2 ";
+    my $str = "preprocess_fastq.pl --fastq $f1,$f2 --umi_len $umi_len --cbc_len $cbc_len $polytrim  2>$log1 | gzip -n > $cbc 2> $log2 ";
     print $str."\n";
     execute($str) if ($test == 0);
     check_filesize(file=>$cbc, minsize=>1000);

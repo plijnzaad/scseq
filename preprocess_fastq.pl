@@ -8,14 +8,14 @@ my $version=getversion($0);
 warn "Running $0, version $version\n";
 warn "Arguments: @ARGV\n";
 
-my($fastq, $umi_len, $cbc_len, $polytrim, $CBCbeforeUMI, $read1, $help);
+my($fastq, $umi_len, $cbc_len, $polytrim, $CBCbeforeUMI, $read1, $five, $three, $help);
 
 $CBCbeforeUMI=0;                        # CELSeq2
 
 ## -xytrim worked, but didn't help so was removed at after commit 26547a0374 (2016-11-02 16:44:17)
 
 my $usage = "
-Usage: $0 --fastq s_R1.fastq.gz,s_R2.fastq.gz --umi_len 6 --cbc_len 8  [ OPTIONS ]  | gzip >  s_cbc.fastq.gz 
+Usage: $0 --fastq s_R1.fastq.gz,s_R2.fastq.gz --umi_len 6 --cbc_len 8  [ OPTIONS ]  | gzip -n >  s_cbc.fastq.gz 
 
 In CELSeq2, read1 contains (in that order) CBC, UMI, polyT, whereas read2
 contains the mRNA.  This script takes the CBC and UMI from read1, and
@@ -50,6 +50,8 @@ Options:
     --read1 s_R1_cbc.fastqc.gz     # also save the read1's with the new id
     --polytrim=G12,A14             # trim read2 of any stretches of 12 G's and 14 A's (in that order) and beyond
     --CBCbeforeUMI                 # CELseq2 has first the  UMI, then the CBC, this option inverts that
+    --five=6                       # Trim 6 nt from the 5'-side of read2
+    --three=8                      # Trim 8 nt from the 3'-side of read2 (only for reads that were not polytrimmed)
 
 Heavily adapted by <plijnzaad\@gmail.com> from the original written by Lennart Kester.
 ";
@@ -60,6 +62,8 @@ die $usage unless GetOptions('fastq=s'=> \$fastq,
                              'read1=s'=> \$read1,
                              'polytrim=s' => \$polytrim,
                              'CBCbeforeUMI' => \$CBCbeforeUMI,
+                             'five=i' => \$five,
+                             'three=i' => \$three,
                              'help|h' => \$help);
 die $usage if $help;
 die $usage unless $fastq && defined($umi_len) && defined($cbc_len);
@@ -101,7 +105,7 @@ open($IN2, "zcat $fastq[1] |") || die "$0: $fastq[1]: $!";
 
 if($read1) { 
   $read1 =~ s/\.fastq.*$//i;
-  open(READ1, " | gzip > $read1.fastq.gz ") || die "read1: $!";
+  open(READ1, " | gzip -n > $read1.fastq.gz ") || die "read1: $!";
 }
 
 my ($line1, $line2, $bar);
@@ -139,31 +143,47 @@ while( not eof $IN1 and not eof $IN2) {
   $lines1[0] = "$id:cbc=$cbc:umi=$umi $rest1\n" if $read1;
   $lines2[0] = "$id:cbc=$cbc:umi=$umi $rest\n";
 
-### do trimming, if any:
-  my $line2=$lines2[1];
+  ## do polytrimming, if any:
+  my $seq2=$lines2[1];
+  chomp($seq2);
   for my $rid (@regexpids) { 
-    if( $line2 =~ $regexps->{$rid} ) { 
-      my $newlen=length($line2) - (length($1)+1); # +1 for the \n
+    if( $seq2 =~ $regexps->{$rid} ) { 
+      my $trimmed=length($1);
+      my $newlen=length($seq2) - $trimmed;
+      $seq2= substr($seq2,0, $newlen);
       $polytrimmedlen->{$rid}=$newlen;    # remember for the qual line
-      $line2= substr($line2,0, $newlen) . "\n";
       $ntrimmed->{$rid}++;
-      $ntrimmedtotal->{$rid} += length($1);
+      $ntrimmedtotal->{$rid} += $trimmed;
     }
   }
-  if ( $line2 eq "\n") { 
+
+  my $qual2=$lines2[3];
+  chomp($qual2);
+  # apply same trimming to phred qualities
+  for my $rid (@regexpids) { 
+    if(exists($polytrimmedlen->{$rid})) { 
+      $qual2= substr($qual2,0, $polytrimmedlen->{$rid});
+    }
+  }
+
+  ## ordinary trimming:
+  if($five) {
+    $seq2 = substr($seq2, $five);
+    $qual2 = substr($qual2, $five);
+  }
+
+  if ($three && ! int(keys %$polytrimmedlen))  { 
+    $seq2 = substr($seq2, 0, -$three);
+    $qual2 = substr($qual2, 0, -$three);
+  }
+
+  if ( $seq2 eq "") {                   # trimmed to zilch
     $nemptyreads ++;
     next READ;
   }
-  $lines2[1]=$line2;
 
-### line with Phred qualities:
-  $line2=$lines2[3];
-  for my $rid (@regexpids) {               # trim qual line if seqline was trimmed
-    if(exists($polytrimmedlen->{$rid})) { 
-      $line2= substr($line2,0, $polytrimmedlen->{$rid}) . "\n";
-    }
-  }
-  $lines2[3]=$line2;
+  $lines2[1]=$seq2 ."\n";
+  $lines2[3]=$qual2."\n";
 
   print  join("", @lines2);
   print  READ1 join("", @lines1) if $read1;
