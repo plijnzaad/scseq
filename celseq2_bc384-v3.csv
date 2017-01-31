@@ -1,10 +1,15 @@
-## comments and empty lines in this file are ignored.
-## Two columns (space or tab-delimited) specify the barcode id and the bardcode itself.
-## A lower case letter in the barcode means: this letter must *always* be exact.
-## This can be used if some barcodes are not different enough from the other
-## to allow a fixed number of mismatches.
-## The current version fixes problems with insufficient edit distance in the previous versions,
-## and is safe to use while allowing for a one nucleotide mismatch.
+## comments and empty lines in this file are ignored.  Two columns
+## (space or tab-delimited) specify the barcode id and the bardcode
+## itself.  A lower case letter in the barcode means: this letter must
+## *always* be exact.  This can be used if some barcodes are not
+## different enough from the other to allow a fixed number of
+## mismatches.  The current version fixes problems with insufficient
+## edit distance in the previous versions, and is safe to use while
+## allowing for a one nucleotide mismatch.  
+##
+## The IDs of the barcodes are simply sequential (c1 .. c384); 
+## version v4 of this file uses well names (A1 .. P24) but 
+## is otherwise identical.
 ## Philip Lijnzaad, 22nov2016
 c1	CGTCTAAT
 c2	AGACTCGT
