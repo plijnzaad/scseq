@@ -65,27 +65,23 @@ die $usage if $help;
 die $usage unless $fastq && defined($umi_len) && defined($cbc_len);
 
 my $regexps ={};
+my @regexpids = ();                     # to maintain the order
 
 if (defined($polytrim)) { 
-  my @nucs=split(',', $polytrim);
-  for my $nt (@nucs) { 
-    my($nuc, $num)= ($nt =~ /^([ACGT])(\d+)/);
-    die "$0: expected string like -trim=A18,T18" unless $nuc && $num;
-    $regexps->{$nuc}=$num;
-  }
-
-  for my $nuc ( keys  %$regexps ) { 
-    my $re = '(' . $nuc x $regexps->{$nuc} . ".*)";
+  my @oligos=split(',', $polytrim);
+  for my $oli (@oligos) { 
+    my($nuc, $num)= ($oli =~ /^([ACGT])(\d+)/);
+    die "$0: expected string like --trim=A18,T18" unless $nuc && $num;
+    my $re = '(' . $nuc x $num . ".*)";
     $regexps->{$nuc}= qr/$re/;
+    push(@regexpids, $nuc);
   }
 }
 
 my $ntrimmed={};
 my $ntrimmedtotal={};
-my @all=sort keys %$regexps;
-my @regexpids=( grep(/^[ATCG]$/, @all ), grep(/_/, @all )); # first -trim
 
-for my $rid (keys @regexpids) {              # rid=regexp-id
+for my $rid (@regexpids) {              # rid=regexp-id
   $ntrimmed->{$rid}=0;
   $ntrimmedtotal->{$rid}=0;
 }
@@ -162,7 +158,7 @@ while( not eof $IN1 and not eof $IN2) {
 
 ### line with Phred qualities:
   $line2=$lines2[3];
-  for my $rid (@regexpids) {               # trim qual line if seqline was
+  for my $rid (@regexpids) {               # trim qual line if seqline was trimmed
     if(exists($polytrimmedlen->{$rid})) { 
       $line2= substr($line2,0, $polytrimmedlen->{$rid}) . "\n";
     }
