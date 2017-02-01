@@ -71,7 +71,7 @@ die $usage unless $fastq && defined($umi_len) && defined($cbc_len);
 my $regexps ={};
 my @regexpids = ();                     # to maintain the order
 
-if (defined($polytrim)) { 
+if (defined($polytrim) && $polytrim && $polytrim !~ /^n(o(ne)?)?/i && $polytrim !~ /^f(alse)?/i ) { 
   my @oligos=split(',', $polytrim);
   for my $oli (@oligos) { 
     my($nuc, $num)= ($oli =~ /^([ACGT])(\d+)/);
