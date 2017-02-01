@@ -146,13 +146,15 @@ if ( $npr != 2 ) {                      # npr is 0 or 1: do mapping
     die "$cbc: $!" unless -f $cbc;
   } 
 
-  my $sai = "$outdir/$name.sai"; 
+  my $sai = opensai($out);
+
   my($log)=openlog("bwa_alnLOG-$version");
   my $mapping = "bwa aln -B 0 -t $t $bwaparams $r $cbc ";
   my $cmdline= "$mapping > $sai 2>$log";
   print "$cmdline\n";
   dumplog($log);
   my $status=execute($cmdline) if ($test == 0);
+
   confess "non-zero exit status: $status" unless $status==0;
   check_filesize(file=>$sai, minsize=>1000);
   

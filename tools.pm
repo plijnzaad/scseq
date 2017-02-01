@@ -475,6 +475,17 @@ sub dumplog {
   unlink($log);
 }                                       # dumplog
 
+sub opensai { 
+  my ($out)=@_;
+  my($template)= "$out-XXXXXXXX";
+  { no warnings;
+    local($^W)=0;
+    my(undef, $sai)=tempfile($template, OPEN=>0, suffix=> ".sai");
+    $sai;
+  }
+}
+
+
 sub check_filesize {
   my $args = ref $_[0] eq 'HASH' ? shift : {@_};
   my($file, $minsize)=map{$args->{$_} } qw(file minsize);
