@@ -106,7 +106,7 @@ while( <IN> ) {
   chomp $_;
 
   if (substr($_,1,2) eq "SQ" ){
-    my (@tag, $name)=split("\t", $_);
+    my ($tag, $name, @rest)=split("\t", $_);
     if ($name =~ /^ERCC-0/) { $nERCCs++; } else { $nrefgenes ++; }
     next SAMLINE;
   }
