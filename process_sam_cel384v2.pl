@@ -102,7 +102,12 @@ for my $f (@bams) {
 my $cmd = "($samtools view -H $bams[0]; " . join("; ", map { "samtools view $_" } @bams) . ")";
 
 open(IN,"$cmd |") || die "$cmd: $!";
+my $seen    = "$prefix-genesseen.txt";
 
+open(SEEN, "> $seen") || die "$seen: $!";
+print SEEN "#samlines\tgenes\n";
+
+my $genes_seen={};
 my $nrefgenes=0;
 my $nERCCs=0;
 
@@ -113,7 +118,7 @@ while( <IN> ) {
 
   if (substr($_,1,2) eq "SQ" ){
     my ($tag, $name, @rest)=split("\t", $_);
-    if ($name =~ /^ERCC-0/) { $nERCCs++; } else { $nrefgenes ++; }
+    if ($name =~ /^ERCC-0/) { $nERCCs++; } else { $nrefgenes++; }
     next SAMLINE;
   }
 
@@ -155,6 +160,7 @@ while( <IN> ) {
   ## count only reads with valid barcode, uniquely mapping in the sense orientation:
   if ($cbc && exists $barcodes->{$cbc}){
     if ($X0 == 1 && ! $reverse){ 
+      $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slowish)
       $tc->{$RNAME}{$cbc}{$umi}++; 
       # note: invalid umi's are filtered out later!
     } else {
@@ -170,9 +176,11 @@ while( <IN> ) {
     $nmapped_invalidCBC += ($X0 > 0);
   } 
   $nreads++;
-  warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1000000 == 0 );
+  print SEEN  join("\t", $nreads, int(keys(%$genes_seen))). "\n"  if ($nreads % 10_000 == 0 );
+  warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1_000_000 == 0 );
 }                                       # SAMLINE
 close(IN) || die "$cmd: $!";
+close(SEEN) || die "$seen: $!";
 
 my $coutt   = "$prefix.coutt.csv";
 my $coutb   = "$prefix.coutb.csv";
