@@ -51,13 +51,18 @@ if ( $help  || !(@bams && $barfile && $umi_len && $cbc_len) ) {
 my $barcodes_mixedcase = mismatch::readbarcodes($barfile); ## eg. $h->{'AGCGtT') => 'M3'
 my $barcodes = mismatch::mixedcase2upper($barcodes_mixedcase);     ## e.g. $h->{'AGCGTT') => 'M3'
 
-sub bycode {                            # sort the barcodes by their ids (which may contain prefixes)
+
+sub byletterandnumber { # sort the barcodes by their ids (which may contain prefixes)
   my ($aa,$bb) = ($a,$b);
-  $aa=$barcodes->{$aa}; $aa =~ s/[A-Za-z_]//g;
-  $bb=$barcodes->{$bb}; $bb =~ s/[A-Za-z_]//g; 
-  $aa <=> $bb;
+  $aa=$barcodes->{$aa}; 
+  $bb=$barcodes->{$bb}; 
+  my($re)= qr/([A-Za-z_]*)([0-9]+)/;
+  my ($Sa, $Na) = ($aa =~ $re);
+  my ($Sb, $Nb) = ($bb =~ $re);
+  ($Sa cmp $Sb) || ($Na <=>  $Nb);
 }
-my @cells = sort bycode (keys %$barcodes); # @cells bar codes sorted by their id's (e.g. c1, c2, ... )
+
+my @wells = sort byletterandnumber (keys %$barcodes); 
 
 my $mismatch_REs=undef;
 
@@ -182,7 +187,7 @@ print OUTB "GENEID";
 print OUTC "GENEID";
 print OUTT "GENEID";
 
-foreach my $cbc (@cells){
+foreach my $cbc (@wells){
   my $id=$barcodes->{$cbc};
   print OUTB "\t$id";
   print OUTC "\t$id";
@@ -203,7 +208,7 @@ foreach my $gene (sort keys %$tc) {
   print OUTT $gene;
   print OUTC $gene;
 CELL:
-  foreach my $cbc (@cells) {
+  foreach my $cbc (@wells) {
     my $n = 0;                             # distinct UMIs for this gene+cell
     my $rc = 0;                            # total reads for this gene+cell
   UMI:
