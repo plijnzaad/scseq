@@ -106,6 +106,7 @@ open(IN,"$cmd |") || die "$cmd: $!";
 my $nrefgenes=0;
 my $nERCCs=0;
 
+
 SAMLINE:
 while( <IN> ) {
   chomp $_;
@@ -243,7 +244,7 @@ sub stat_format {
 $ref = "unknown" unless $ref;
 
 print SOUT "reference transcriptome: $ref\n";
-print SOUT "        contains $nERCCs ERCCs and " . commafy($nERCCs) . "\n";
+print SOUT "        contains $nERCCs ERCCs and " . commafy($nrefgenes) . " genes\n";
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
