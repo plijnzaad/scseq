@@ -198,10 +198,10 @@ print OUTB "\n";
 print OUTC "\n";
 print OUTT "\n";	
 
-my $trc = 0;
+my $maxumis = 4 ** $umi_len;
 
-## print read counts, umi counts and transcript counts
-my $bn = 4 ** $umi_len;                 # max #(different umis)
+## gather read counts, umi counts and transcript counts
+my $trc = 0;
 
 GENE:
 foreach my $gene (sort keys %$tc) {
@@ -223,9 +223,9 @@ CELL:
       $rc += $reads; # total valid (=uniquely sense-mapped) reads for this gene+cell
     }                                   # UMI
     $trc += $rc unless $gene =~ /^#/;
-    $n = $n - 0.5 if ($n == $bn); # saturation correction PL: @@@ keep count of this?
+    $n = $n - 0.5 if ($n == $maxumis); # saturation correction PL: @@@ keep count of this?
     my $txpts = $n;                      # used only for '#IGNORED' etc. @@@fix this
-    $txpts = -log(1 - ($n/$bn)) * $bn unless ($gene =~ /^#/ ); # binomial/Poisson correction
+    $txpts = -log(1 - ($n/$maxumis)) * $maxumis unless ($gene =~ /^#/ ); # binomial/Poisson correction
 
     print OUTB "\t$n";
     print OUTC "\t$rc";
