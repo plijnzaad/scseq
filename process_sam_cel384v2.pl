@@ -48,6 +48,8 @@ if ( $help  || !(@bams && $barfile && $umi_len && $cbc_len) ) {
   die $usage;
 }
 
+my $maxumis = 4 ** $umi_len;
+
 my $barcodes_mixedcase = mismatch::readbarcodes($barfile); ## eg. $h->{'AGCGtT') => 'M3'
 my $barcodes = mismatch::mixedcase2upper($barcodes_mixedcase);     ## e.g. $h->{'AGCGTT') => 'M3'
 
@@ -102,17 +104,25 @@ for my $f (@bams) {
 my $cmd = "($samtools view -H $bams[0]; " . join("; ", map { "samtools view $_" } @bams) . ")";
 
 open(IN,"$cmd |") || die "$cmd: $!";
-my $seen    = "$prefix-genesseen.txt";
+my $seen    = "$prefix-occurrences.txt";
 
 open(SEEN, "> $seen") || die "$seen: $!";
-print SEEN "#reads\tgenes\tumis\n";
-print SEEN "1\t1\t1\n";
+print SEEN "#reads\tgenes\tumis\ttxpts\tgenesSubsample\tumiSubsample\ttxptSubsample\n";
+print SEEN "1\t1\t1\t1\t1\t1\t1\n";
 
-my $genes_seen={};
-my $umis_seen={};
+my $sample_every = 10_000;
+my $genes_seen={};                      # cumulative
+my $umis_seen={};                       # cumulative
+my $genes_subsample={};              
+my $umis_subsample={};
 my $nrefgenes=0;
 my $nERCCs=0;
 
+sub umi_correction { 
+  my($n, $maxumis)=@_;
+  $n= $n - 0.5 if $n >= $maxumis;
+  sprintf("%.2f", -$maxumis*log(1 - ($n/$maxumis)));
+}
 
 SAMLINE:
 while( <IN> ) {
@@ -165,6 +175,8 @@ while( <IN> ) {
       $tc->{$RNAME}{$cbc}{$umi}++; 
       $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slowish)
       $umis_seen->{$RNAME.$umi}++;
+      $genes_subsample->{$RNAME}++;
+      $umis_subsample->{$RNAME.$umi}++;
       # note: invalid umi's are filtered out later
     } else {
       $nignored++;
@@ -179,18 +191,42 @@ while( <IN> ) {
     $nmapped_invalidCBC += ($X0 > 0);
   } 
   $nreads++;
+  if ($nreads % $sample_every == 0 ) { 
+    my $g=int(keys(%$genes_seen));
+    my $u=int(keys(%$umis_seen));
+    my $gs=int(keys(%$genes_subsample));
+    my $us=int(keys(%$umis_subsample));
+    print SEEN  join("\t", 
+                     ($nreads, 
+                      $g, 
+                      $u,
+                      umi_correction($u,$maxumis*$g),
+                      $gs, 
+                      $us,
+                      umi_correction($us, $maxumis*$gs))) . "\n";
+    $genes_subsample = {};
+    $umis_subsample = {};
+
+    warn int($nreads/1000_000) . " million reads processed\n" if $nreads % 1000_000 == 0;
+  }
+}                                       # SAMLINE
+## don't forget last count:
+{ 
+  my $g=int(keys(%$genes_seen));
+  my $u=int(keys(%$umis_seen));
+  my $gs=int(keys(%$genes_subsample));
+  my $us=int(keys(%$umis_subsample));
   print SEEN  join("\t", 
                    ($nreads, 
-                   int(keys(%$genes_seen)), 
-                   int(keys(%$umis_seen)))). "\n"  if ($nreads % 10_000 == 0 );
-  warn int($nreads/1000000) . " million reads processed\n" if ($nreads % 1_000_000 == 0 );
-}                                       # SAMLINE
-## don't forget last count 
-print SEEN  join("\t", 
-                 ($nreads, 
-                  int(keys(%$genes_seen)), 
-                  int(keys(%$umis_seen)))) . "\n";
-warn commafy($nreads) . " million reads processed\n";
+                    $g, 
+                    $u,
+                    umi_correction($u,$maxumis*$g),
+                    $gs, 
+                    $us,
+                    umi_correction($us, $maxumis*$gs))) . "\n";
+  warn commafy($nreads) . " reads processed\n";
+}
+
 close(IN) || die "$cmd: $!";
 close(SEEN) || die "$seen: $!";
 
@@ -218,8 +254,6 @@ print OUTB "\n";
 print OUTC "\n";
 print OUTT "\n";	
 
-my $maxumis = 4 ** $umi_len;
-
 ## gather read counts, umi counts and transcript counts
 my $trc = 0;
 
@@ -245,7 +279,7 @@ CELL:
     $trc += $rc unless $gene =~ /^#/;
     $n = $n - 0.5 if ($n == $maxumis); # saturation correction PL: @@@ keep count of this?
     my $txpts = $n;                      # used only for '#IGNORED' etc. @@@fix this
-    $txpts = -log(1 - ($n/$maxumis)) * $maxumis unless ($gene =~ /^#/ ); # binomial/Poisson correction
+    $txpts = -log(1 - ($n/$maxumis)) * $maxumis unless ($gene =~ /^#/ ); # binomial correction
 
     print OUTB "\t$n";
     print OUTC "\t$rc";
