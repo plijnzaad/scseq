@@ -104,11 +104,11 @@ for my $f (@bams) {
 my $cmd = "($samtools view -H $bams[0]; " . join("; ", map { "samtools view $_" } @bams) . ")";
 
 open(IN,"$cmd |") || die "$cmd: $!";
-my $seen    = "$prefix-occurrences.txt";
+my $saturation    = "$prefix-saturation.txt";
 
-open(SEEN, "> $seen") || die "$seen: $!";
-print SEEN "#reads\tgenes\tumis\ttxpts\tgenesSubsample\tumiSubsample\ttxptSubsample\n";
-print SEEN "1\t1\t1\t1\t1\t1\t1\n";
+open(SATURATION, "> $saturation") || die "$saturation: $!";
+print SATURATION "#reads\tgenes\tumis\ttxpts\tgenesSubsample\tumiSubsample\ttxptSubsample\n";
+print SATURATION "1\t1\t1\t1\t1\t1\t1\n";
 
 my $sample_every = 10_000;
 my $genes_seen={};                      # cumulative
@@ -156,7 +156,7 @@ while( <IN> ) {
   foreach my $el (@rest){
     # ($dum,$dum,$NM) = split(":",$el) if ($el =~ /^NM\:/); # NM: number of mismatches
     # ($dum,$dum,$XA) = split(":",$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
-    ($dum,$dum,$X0) = split(":",$el) if ($el =~ /^X0\:/); # X0: number of best hits
+    ($dum,$dum,$X0) = split(":",$el) if ($el =~ /^X0\:/); # X0: number of best hits (bwa-specific!)
   }
   
   $nmapped += ($X0 > 0); # $X0 is number of locations to which the read maps
@@ -181,7 +181,7 @@ while( <IN> ) {
     } else {
       $nignored++;
       $tc->{'#IGNORED'}{$cbc}{$umi} ++;
-      ## keep track of some subsets of this
+      ## keep track of some (non-exclusive!) subsets of this
       $tc->{'#unmapped'}{$cbc}{$umi} += ($X0 == 0 );
       $tc->{'#multimapped'}{$cbc}{$umi} += ($X0 > 1 );
       $tc->{'#reverse'}{$cbc}{$umi} += $reverse; # (may overlap with multimappers)
@@ -196,7 +196,7 @@ while( <IN> ) {
     my $u=int(keys(%$umis_seen));
     my $gs=int(keys(%$genes_subsample));
     my $us=int(keys(%$umis_subsample));
-    print SEEN  join("\t", 
+    print SATURATION  join("\t", 
                      ($nreads, 
                       $g, 
                       $u,
@@ -216,7 +216,7 @@ while( <IN> ) {
   my $u=int(keys(%$umis_seen));
   my $gs=int(keys(%$genes_subsample));
   my $us=int(keys(%$umis_subsample));
-  print SEEN  join("\t", 
+  print SATURATION  join("\t", 
                    ($nreads, 
                     $g, 
                     $u,
@@ -228,7 +228,7 @@ while( <IN> ) {
 }
 
 close(IN) || die "$cmd: $!";
-close(SEEN) || die "$seen: $!";
+close(SATURATION) || die "$saturation: $!";
 
 my $coutt   = "$prefix.coutt.csv";
 my $coutb   = "$prefix.coutb.csv";
