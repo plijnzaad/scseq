@@ -127,21 +127,24 @@ sub umi_correction {
   sprintf("%.2f", -$maxumis*log(1 - ($n/$maxumis)));
 }
 
-SAMLINE:
-while( <IN> ) {
-  chomp $_;
-
-  if (substr($_,1,2) eq "SQ" ){
+HEADERLINE:
+while(<IN> ) {
+  ## loop is shifted one readline so final printing of SATURATION is OK
+  if ( /^\@SQ/ ){
     my ($tag, $name, @rest)=split("\t", $_);
     if ($name =~ /^ERCC-0/) { $nERCCs++; } else { $nrefgenes++; }
-    next SAMLINE;
+    next HEADERLINE;
   }
-
-  if (substr($_,1,2) eq "PG" ){
+  if ( /^\@PG/ ){
     warn "$0: found: $_";                 # PL:should check if it contains bwa
-    next SAMLINE;
+    next HEADERLINE;
   }
+  last HEADERLINE unless /^@/;
+}
 
+READ:
+while(1) { 
+  chomp $_;
   my @r1 = split("\t",$_);
   my ($QNAME,$FLAG,$RNAME,$POS,$MAPQ,$CIGAR,$MRNM,$MPOS,$ISIZE,$SEQ,$QUAL,@rest)=@r1;
 
@@ -194,7 +197,9 @@ while( <IN> ) {
     $nmapped_invalidCBC += ($X0 > 0);
   } 
   $nreads++;
-  if ($nreads % $sample_every == 0 ) { 
+} continue { 
+  $_ = <IN>;
+  if ($nreads % $sample_every == 0 || eof(IN) ) { 
     my $g=int(keys(%$genes_seen));
     my $u=int(keys(%$umis_seen));
     my $gs=int(keys(%$genes_subsample));
@@ -209,26 +214,10 @@ while( <IN> ) {
                       umi_correction($us, $maxumis*$gs))) . "\n";
     $genes_subsample = {};
     $umis_subsample = {};
-
   }
-  warn int($nreads/1000_000) . " million reads processed\n" if $nreads % 1000_000 == 0;
-}                                       # SAMLINE
-## don't forget last count:
-{ 
-  my $g=int(keys(%$genes_seen));
-  my $u=int(keys(%$umis_seen));
-  my $gs=int(keys(%$genes_subsample));
-  my $us=int(keys(%$umis_subsample));
-  print SATURATION  join("\t", 
-                   ($nreads, 
-                    $g, 
-                    $u,
-                    umi_correction($u,$maxumis*$g),
-                    $gs, 
-                    $us,
-                    umi_correction($us, $maxumis*$gs))) . "\n";
-  warn commafy($nreads) . " reads processed\n";
-}
+  warn int($nreads/1000_0000) . " million reads processed\n" if $nreads % 1000_000 == 0;
+  last READ if eof(IN);
+}                                        # READ
 
 close(IN) || die "$cmd: $!";
 close(SATURATION) || die "$saturation: $!";
