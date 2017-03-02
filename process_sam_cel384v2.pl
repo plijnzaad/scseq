@@ -201,7 +201,6 @@ while(1) {
   } 
   $nreads++;
 } continue { 
-  $_ = <IN>;
   if ($nreads % $sample_every == 0 || eof(IN) ) { 
     my $g=int(keys(%$genes_seen));
     my $u=int(keys(%$umis_seen));
@@ -220,6 +219,7 @@ while(1) {
   }
   warn int($nreads/1000_0000) . " million reads processed\n" if $nreads % 1000_000 == 0;
   last READ if eof(IN);
+  $_ = <IN>;
 }                                        # READ
 
 close(IN) || die "$cmd: $!";
