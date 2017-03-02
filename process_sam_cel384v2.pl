@@ -105,10 +105,13 @@ my $cmd = "($samtools view -H $bams[0]; " . join("; ", map { "samtools view $_" 
 
 open(IN,"$cmd |") || die "$cmd: $!";
 my $saturation    = "$prefix-saturation.txt";
+my $wellsaturation    = "$prefix-wellsaturation.txt";
 
 open(SATURATION, "> $saturation") || die "$saturation: $!";
 print SATURATION "#reads\tgenes\tumis\ttxpts\tgenesSubsample\tumiSubsample\ttxptSubsample\n";
 print SATURATION "1\t1\t1\t1\t1\t1\t1\n";
+
+open(WELLSATURATION, "> $wellsaturation") || die "$wellsaturation: $!";
 
 my $sample_every = 10_000;
 my $genes_seen={};                      # cumulative
@@ -207,8 +210,8 @@ while( <IN> ) {
     $genes_subsample = {};
     $umis_subsample = {};
 
-    warn int($nreads/1000_000) . " million reads processed\n" if $nreads % 1000_000 == 0;
   }
+  warn int($nreads/1000_000) . " million reads processed\n" if $nreads % 1000_000 == 0;
 }                                       # SAMLINE
 ## don't forget last count:
 { 
