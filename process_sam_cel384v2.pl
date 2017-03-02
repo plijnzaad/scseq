@@ -173,16 +173,15 @@ CELL:
     my $umihash=$tc->{$gene}{$cbc};
     my @umis = keys %{$umihash};
 
-    if ( $rescue_umi_Ns ) { 
-      warn "*** this code has not been tested yet";
+    if ( $rescue_umi_Ns ) {             # preprocessing to rescue UMI's containing N's
       my @Ns=grep(/N/i, @umis);
       if (@Ns) { 
+        warn "*** this code has not been tested yet";
         warn "*** gene $gene cell $cbc has several N-containing UMIs, or with a UMI containing several N's:\n"  
             . join('\n***', @umis) if ( @Ns > 1 || grep(/N.*N/i, @Ns) ); # prolly rare
         my @noNs=grep(! /N/i, @umis);
 
         my $h=cleanup_umis(\@noNs, \@Ns, $umihash );
-        
         $umihash = $h->{umis};
         $tc->{$gene}{$cbc} = $umihash;
         @umis = keys %{$umihash};
@@ -220,31 +219,37 @@ CELL:
 
 sub cleanup_umis { 
   ## costly ...
-  my ($noNs,$Ns, $reads)=@_;
+  my ($noNs,$Ns, $umihash)=@_;          # umihash contains read counts per umi
   my @newNs=();
   my($nrescued, $ndiscarded)=(0,0);
 
+ UMI:
   for my $N ( @$Ns ) { 
+    if ($umihash->{$N} >1) { 
+      # only keep singles, as 2 x ACTN could have come from ACTT and ACTA
+      delete $umihash->{$N};
+      $ndiscarded++;
+      next UMI;
+    }
     my $re=$N;
     $re =~ s/[Nn]/./g;
     my @hits=grep( qr/$re/, @$noNs) > 1;
-    ## note: how to compare ANGT with ACNT ? hopefully rare, is warned about
-    if ( @hits == 0 ) {                 # uniq N-containing UMI, rename it
-      my $new=$N;
-      $new =~ s/[Nn]/X/g;   
-      $reads->{$new} = $reads->{$N};
-      delete $reads->{$N};
-      $nrescued++;
-    } elsif (@hits==1) { # e.g. 'AAAN'='AAAG', add its reads to the proper one
-      $reads->{ $hits[0] } += $reads->{$N};      
-      delete $reads->{$N};
-      $nrescued++;
-    } else {
-      delete $reads->{$N};
+
+    if ( @hits ) {                 
+      # e.g. /ACT./ ~ ACTG but could represent ACTA => 2 umis
+      delete $umihash->{$N};
       $ndiscarded++;
+      next UMI;
     }
-  }
-  { reads => $reads,
+    ## In case you can't tolerate any N's: 
+    ## my $new=$N;
+    ## $new =~ s/[Nn]/X/g;   
+    ## $umihash->{$new} = $umihash->{$N};
+    ## delete $umihash->{$N};
+    $nrescued++;
+  }                                     # UMI
+
+  { umihash => $umihash,
     discarded=>$ndiscarded, 
     rescued=>$nrescued,
   };
