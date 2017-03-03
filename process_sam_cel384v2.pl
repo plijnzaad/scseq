@@ -360,7 +360,7 @@ print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
 print SOUT "valid barcode, invalid UMI: " , stat_format($ninvalidUMI, $nreads);
 print SOUT "rescued invalid CBC: " , stat_format($nrescued_invalidCBC, $nreads);
-print SOUT "invalid CBC: " , stat_format($nrescued_invalidCBC, $nreads );
+print SOUT "invalid CBC: " , stat_format($ninvalidCBC, $nreads );
 print SOUT "rescued invalid UMIs: " , stat_format($nrescued_invalidUMI, $nreads);
 print SOUT "mapped read, but invalid CBC: " , stat_format($nmapped_invalidCBC, $nunimapped);
 print SOUT "total reads = unique&valid + ignored + invalidCBC + invalidUMI:\n" 
