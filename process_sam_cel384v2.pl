@@ -269,11 +269,10 @@ WELL:
       if (@Ns) { 
         my @noNs=grep(! /N/i, @umis);
 
-        my $h=cleanup_umis(\@noNs, \@Ns, $umihash );
         my $oldus=join(',', keys %$umihash);
-        my $newus=join(',', keys $h->{umihash});
-        warn "$gene\t$cbc\t$oldus=>$newus\t$h->{discarded}$h->{rescued}\n";
-        $umihash = $h->{umis};
+        my $h=cleanup_umis(\@noNs, \@Ns, $umihash );
+        my $newus=join(',', keys %$umihash);
+        warn "UMIn: $gene\t$cbc\t$oldus=>$newus\tdisc:$h->{discarded} resc:$h->{rescued}\n";
         $tc->{$gene}{$cbc} = $umihash;
         @umis = keys %{$umihash};
 
@@ -309,7 +308,7 @@ WELL:
 }                                       # GENE
 
 sub cleanup_umis { 
-  ## costly ...
+  ## costly. Deletes invalid UMIs from the hash, converts useable ones and returns number of deleted and rescued UMIs
   my ($noNs,$Ns, $umihash)=@_;          # umihash contains read counts per umi
   my @newNs=();
   my($nrescued, $ndiscarded)=(0,0);
@@ -323,8 +322,9 @@ sub cleanup_umis {
       next UMI;
     }
     my $re=$N;
-    $re =~ s/[Nn]/./g;
-    my @hits=grep( qr/$re/, @$noNs) > 1;
+    $re =~ s/[Nn]/./g; 
+    $re="^$re\$";
+    my @hits=grep( /$re/, @$noNs);
 
     if ( @hits ) {                 
       # e.g. /ACT./ ~ ACTG but could represent ACTA => 2 umis
@@ -340,8 +340,7 @@ sub cleanup_umis {
     $nrescued++;
   }                                     # UMI
 
-  { umihash => $umihash,
-    discarded=>$ndiscarded, 
+  { discarded=>$ndiscarded, 
     rescued=>$nrescued,
   };
 }                                       # cleanup_umis
