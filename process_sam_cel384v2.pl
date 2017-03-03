@@ -259,20 +259,20 @@ foreach my $gene (sort keys %$tc) {
   print OUTC $gene;
 WELL:
   foreach my $cbc (@wells) {
-    my $n = 0;                             # distinct UMIs for this gene+cell
-    my $rc = 0;                            # total reads for this gene+cell
+    my $n = 0;                          # distinct UMIs for this gene+cell
+    my $rc = 0;                         # total reads for this gene+cell
     my $umihash=$tc->{$gene}{$cbc};
     my @umis = keys %{$umihash};
 
-    if ( $rescue_umis ) {             # preprocessing to rescue UMI's containing N's
+    if ( $rescue_umis && $gene !~ /#/ ) { # preprocessing to rescue UMI's containing N's
       my @Ns=grep(/N/i, @umis);
       if (@Ns) { 
-        warn "*** this code has not been tested yet";
-        warn "*** gene $gene cell $cbc has several N-containing UMIs, or with a UMI containing several N's:\n"  
-            . join('\n***', @umis) if ( @Ns > 1 || grep(/N.*N/i, @Ns) ); # prolly rare
         my @noNs=grep(! /N/i, @umis);
 
         my $h=cleanup_umis(\@noNs, \@Ns, $umihash );
+        my $oldus=join(',', keys %$umihash);
+        my $newus=join(',', keys $h->{umihash});
+        warn "$gene\t$cbc\t$oldus=>$newus\t$h->{discarded}$h->{rescued}\n";
         $umihash = $h->{umis};
         $tc->{$gene}{$cbc} = $umihash;
         @umis = keys %{$umihash};
