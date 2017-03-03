@@ -17,22 +17,22 @@ warn "Running $0, version $version\nwith arguments:\n  @ARGV\n";
 our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $ref, $rescue_umis, $help);
 
 my $usage = "
-Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH  [ -allow_mm=1 ] [--prefix name ] file.bam [ file2.bam ...] [ --rescue_umis ]
+Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH   [--prefix name ] [ -allow_mm=1 ] [ --rescue_umis ] file.bam [ file2.bam ...] 
 
 Arguments: 
 
---barcodefile=FILE  File with cell bar codes (format: id \\t sequence)
---umi_len=N         Length of the UMIs
+--barcodefile FILE  File with cell bar codes (format: id \\t sequence)
+--umi_len N         Length of the UMIs
 
 file.bam ...        Name(s) of the bam file(s), typically from several lanes. If
                     more than one they are assumed to have the same header.
 Options:
 --help              This message
---allow_mm=N        How many mismatches to allow in the cell barcodes (default: 0)
+--allow_mm N        How many mismatches to allow in the cell barcodes (default: 0)
 
---prefix=name       Prefix for the four output files: NAME.coutt.csv, NAME.coutb.csv, NAME.coutc.csv and NAME.sout
+--prefix name       Prefix for the four output files: NAME.coutt.csv, NAME.coutb.csv, NAME.coutc.csv and NAME.sout
                     Default is the name of the first bam file without extension and lane number.
---ref=name          Name of the reference genome (only for logging)
+--ref name          Name of the reference genome (only for logging)
 ";
 
 die $usage unless GetOptions('barcodefile=s'=> \$barfile,
