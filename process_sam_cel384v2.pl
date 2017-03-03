@@ -14,10 +14,10 @@ use mismatch;
 my $version=getversion($0);
 warn "Running $0, version $version\nwith arguments:\n  @ARGV\n";
 
-our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $ref, $help);
+our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $ref, $rescue_umis, $help);
 
 my $usage = "
-Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH  [ -allow_mm=1 ] [--prefix name ] file.bam [ file2.bam ...]
+Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH  [ -allow_mm=1 ] [--prefix name ] file.bam [ file2.bam ...] [ --rescue_umis ]
 
 Arguments: 
 
@@ -41,6 +41,7 @@ die $usage unless GetOptions('barcodefile=s'=> \$barfile,
                              'allow_mm=i'=> \$allow_mm,
                              'prefix=s' => \$prefix,
                              'ref=s' => \$ref,
+                             'rescue_umis'=> \$rescue_umis,
                              'help|h' => \$help);
 my @bams=@ARGV;
 
@@ -77,6 +78,8 @@ $barcodes_mixedcase=undef;              # not used in remainder, delete to avoid
 my $nreads = 0;
 my $nreverse=0;
 my $ninvalidUMI=0;
+my $nrescued_invalidUMI=0;
+
 my $nignored=0;
 
 my $ninvalidCBC=0;
@@ -254,13 +257,36 @@ foreach my $gene (sort keys %$tc) {
   print OUTB $gene;
   print OUTT $gene;
   print OUTC $gene;
-CELL:
+WELL:
   foreach my $cbc (@wells) {
     my $n = 0;                             # distinct UMIs for this gene+cell
     my $rc = 0;                            # total reads for this gene+cell
+    my $umihash=$tc->{$gene}{$cbc};
+    my @umis = keys %{$umihash};
+
+    if ( $rescue_umis ) {             # preprocessing to rescue UMI's containing N's
+      my @Ns=grep(/N/i, @umis);
+      if (@Ns) { 
+        warn "*** this code has not been tested yet";
+        warn "*** gene $gene cell $cbc has several N-containing UMIs, or with a UMI containing several N's:\n"  
+            . join('\n***', @umis) if ( @Ns > 1 || grep(/N.*N/i, @Ns) ); # prolly rare
+        my @noNs=grep(! /N/i, @umis);
+
+        my $h=cleanup_umis(\@noNs, \@Ns, $umihash );
+        $umihash = $h->{umis};
+        $tc->{$gene}{$cbc} = $umihash;
+        @umis = keys %{$umihash};
+
+        $ninvalidUMI += $h->{discarded};
+        $nrescued_invalidUMI += $h->{rescued};
+      }
+    }
+
   UMI:
-    foreach my $umi (keys %{$tc->{$gene}{$cbc}}) {
+    foreach my $umi (@umis) {
       if ($umi =~ /N/i  && $gene !~ /#/) { 
+        confess "gene $gene, cbc $cbc, umi $umi contains N, should not happen when rescueing UMIs" 
+            if $rescue_umis;    # should have become 'X' or disappeared altogether
         $ninvalidUMI ++ ;
         next UMI;
       }
@@ -276,11 +302,49 @@ CELL:
     print OUTB "\t$n";
     print OUTC "\t$rc";
     print OUTT "\t$txpts";
-  }                                     # CELL
+  }                                     # WELL
   print OUTT "\n";
   print OUTB "\n";
   print OUTC "\n";
 }                                       # GENE
+
+sub cleanup_umis { 
+  ## costly ...
+  my ($noNs,$Ns, $umihash)=@_;          # umihash contains read counts per umi
+  my @newNs=();
+  my($nrescued, $ndiscarded)=(0,0);
+
+ UMI:
+  for my $N ( @$Ns ) { 
+    if ($umihash->{$N} >1) { 
+      # only keep singles, as 2 x ACTN could have come from ACTT and ACTA
+      delete $umihash->{$N};
+      $ndiscarded++;
+      next UMI;
+    }
+    my $re=$N;
+    $re =~ s/[Nn]/./g;
+    my @hits=grep( qr/$re/, @$noNs) > 1;
+
+    if ( @hits ) {                 
+      # e.g. /ACT./ ~ ACTG but could represent ACTA => 2 umis
+      delete $umihash->{$N};
+      $ndiscarded++;
+      next UMI;
+    }
+    ## In case you can't tolerate any N's: 
+    my $new=$N;
+    $new =~ s/[Nn]/X/g;   
+    $umihash->{$new} = $umihash->{$N};
+    delete $umihash->{$N};
+    $nrescued++;
+  }                                     # UMI
+
+  { umihash => $umihash,
+    discarded=>$ndiscarded, 
+    rescued=>$nrescued,
+  };
+}                                       # cleanup_umis
 
 sub stat_format { 
   my($part, $total)=@_;
@@ -296,7 +360,8 @@ print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
 print SOUT "valid barcode, invalid UMI: " , stat_format($ninvalidUMI, $nreads);
 print SOUT "rescued invalid CBC: " , stat_format($nrescued_invalidCBC, $nreads);
-print SOUT "invalid CBC: " , stat_format($ninvalidCBC, $nreads);
+print SOUT "invalid CBC: " , stat_format($nrescued_invalidCBC, $nreads );
+print SOUT "rescued invalid UMIs: " , stat_format($nrescued_invalidUMI, $nreads);
 print SOUT "mapped read, but invalid CBC: " , stat_format($nmapped_invalidCBC, $nunimapped);
 print SOUT "total reads = unique&valid + ignored + invalidCBC + invalidUMI:\n" 
     .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $ninvalidCBC, $ninvalidUMI);
