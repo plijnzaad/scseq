@@ -34,7 +34,7 @@ Optional arguments:
   --t THREADS  Number of threads bwa can use  (default 1)
   --ind 'is' or 'bwtsw' (default: 'is' (<2GB reference)    
   --q PHRED_QUALITY_FOR_TRIMMING (0..62, default 0)   
-  --aln_n edit distance  (bwa aln option -n, default 0.04)  
+  --aln_n edit distance  (bwa aln option -n, default 0.04; don't confuse with the bwa samse -n option)
   --aln_k edit distance in seed  (bwa aln option -k, default 2)   
   --l SEED_LENGTH  (bwa -l option)  
   --i 1 or 0 (1 if indexing is required, runs bwa index on reference transcriptome. Default 0)
@@ -80,8 +80,7 @@ die "Specify either --cbc, or --f1 and --f2; \nin the latter case\n" . $usage if
 die "Don't mix any of -[ql] or aln_{k,n} with --bwaparams! \n" . $usage if ( $bwaparams && ($q || $aln_n || $aln_k || $l)  );
 
 # hard coded:
-my $n = 100; # maximal number of unpaired reads to output in XA tag
-my $N = 100; # maximal number of paired reads to output in XA tag
+my $maxn_XA = 10; # maximal number of unpaired reads to output in XA tag
 
 $q = 0 if !$q; # base quality cutoff for trimming
 $l = 200 if !$l; # seed length
@@ -162,7 +161,7 @@ if ( $npr != 2 ) {                      # npr is 0 or 1: do mapping
   my($samse_log, $PGline_log, $sam2bam_log)=(openlog("bwasamse-LOG-$version"),
                                              openlog("addbwaPGline-LOG-$version"),
                                              openlog("sam2bam-LOG-$version"));
-  $cmdline = "bwa samse -n $n $r $sai $cbc 2>$samse_log | add_bwa_PG_line.pl $mapping 2> $PGline_log | $sam2bam > $out.bam 2> $sam2bam_log";
+  $cmdline = "bwa samse -n $maxn_XA $r $sai $cbc 2>$samse_log | add_bwa_PG_line.pl $mapping 2> $PGline_log | $sam2bam > $out.bam 2> $sam2bam_log";
 
   print $cmdline."\n";
   $status=execute($cmdline) if ($test == 0);
