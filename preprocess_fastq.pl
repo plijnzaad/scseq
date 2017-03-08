@@ -8,7 +8,11 @@ my $version=getversion($0);
 warn "Running $0, version $version\n";
 warn "Arguments: @ARGV\n";
 
-my($fastq, $umi_len, $cbc_len, $polytrim, $CBCbeforeUMI, $read1, $five, $three, $help);
+my($fastq, $umi_len, $cbc_len, $polytrim, $CBCbeforeUMI, $read1, 
+   $five, $three, $minlength, $help);
+
+$minlength=20;                          # Below this the ratio multimappers/uniquehits 
+                                        # starts to increase sharply
 
 $CBCbeforeUMI=0;                        # CELSeq2
 
@@ -28,7 +32,11 @@ stretches of polyA (and to a lesser extent polyT). Specifying
 e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.* and
 TTTTTTTTTTTTTTTTTT.* from read2. The quality lines are trimmed in the same
 way. (These numbers correspond to roughly 0.1% of the actual occurrences
-in the human transcriptome).
+in the human transcriptome). In addition, reads can be clipped using the
+--five and --three options; this is done after the polytrimming.
+
+If reads have become too short (see the --minlength option; default $minlength) as a result of
+all the trimming steps, the read is discarded.
 
 By default CELSeq2 is used, i.e. UMI precedes the cell bar code. Use -protocol=1
 to swap them.
@@ -37,7 +45,7 @@ If also read1 should get its read-id changed, use the -read1 option; this will
 write the amended reads to the (gzipped) fastq file (they will *not* be trimmed
 if the -trim option is specified, because the meaningful  information,
 if any, is beyond the polyT stretch). Note that the transcript is part of read2,
-so this option is prolly only needed when debugging script, lab protocol or both.
+so this option is prolly only meaningful when debugging script, lab protocol or both.
 
 Arguments:
 
@@ -52,6 +60,7 @@ Options:
     --CBCbeforeUMI                 # CELseq2 has first the  UMI, then the CBC, this option inverts that
     --five=6                       # Trim 6 nt from the 5'-side of read2
     --three=8                      # Trim 8 nt from the 3'-side of read2 (only for reads that were not polytrimmed)
+    --minlength=20		   # Discard reads that have become too short (default: $minlength) after all the trimming
 
 Heavily adapted by <plijnzaad\@gmail.com> from the original written by Lennart Kester.
 ";
@@ -64,6 +73,7 @@ die $usage unless GetOptions('fastq=s'=> \$fastq,
                              'CBCbeforeUMI' => \$CBCbeforeUMI,
                              'five=i' => \$five,
                              'three=i' => \$three,
+                             'minlength=i' => \$minlength,
                              'help|h' => \$help);
 die $usage if $help;
 die $usage unless $fastq && defined($umi_len) && defined($cbc_len);
@@ -114,7 +124,7 @@ my $polytrimmedlen={};
 my (@lines1, @lines2);
 
 my $nreads=0;
-my $nemptyreads=0;
+my $ntooshort=0;
 
 READ:
 while( not eof $IN1 and not eof $IN2) {
@@ -177,8 +187,8 @@ while( not eof $IN1 and not eof $IN2) {
     $qual2 = substr($qual2, 0, -$three);
   }
 
-  if ( $seq2 eq "") {                   # trimmed to zilch
-    $nemptyreads ++;
+  if ( length($seq2) < $minlength ) {
+    $ntooshort ++;
     next READ;
   }
 
@@ -203,4 +213,5 @@ for my $rid (@regexpids) {
   warn "trimmed $ntrimmed->{$rid} poly${rid}'s from the reads (totalling $ntrimmedtotal->{$rid} nucleotides)\n"
       if exists($ntrimmed->{$rid}) && $ntrimmed->{$rid} > 0;
 }
-warn "$nemptyreads of the trimmed reads were trimmed to length 0 and therefore discarded\n";
+warn(sprintf("%d (%.1f%%) of the trimmed reads were trimmed to length smaller than %d and therefore discarded\n",
+             $ntooshort, $ntooshort/$nreads, $minlength));
