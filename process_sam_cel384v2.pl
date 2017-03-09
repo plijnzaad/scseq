@@ -315,12 +315,15 @@ sub cleanup_umis {
 
  UMI:
   for my $N ( @$Ns ) { 
-    if ($umihash->{$N} >1) { 
-      # only keep singles, as 2 x ACTN could have come from ACTT and ACTA
-      delete $umihash->{$N};
-      $ndiscarded++;
-      next UMI;
-    }
+    ## following is too strict:
+    ## if ($umihash->{$N} >1) { 
+    ##   # only keep singles, as 2 x ACTN could have come from ACTT and ACTA
+    ##   delete $umihash->{$N};
+    ##   $ndiscarded++;
+    ##   next UMI;
+    ## }
+    ## ... if there are several, at least one is valid (doesn't matter which one it was)
+    $umihash->{$N}=1;
     my $re=$N;
     $re =~ s/[Nn]/./g; 
     $re="^$re\$";
@@ -332,7 +335,7 @@ sub cleanup_umis {
       $ndiscarded++;
       next UMI;
     }
-    ## In case you can't tolerate any N's: 
+    ## In case you can't tolerate any N's (checking mostly)
     my $new=$N;
     $new =~ s/[Nn]/X/g;   
     $umihash->{$new} = $umihash->{$N};
