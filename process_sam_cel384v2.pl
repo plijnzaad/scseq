@@ -111,8 +111,9 @@ my $saturation    = "$prefix-saturation.txt";
 my $wellsaturation    = "$prefix-wellsaturation.txt";
 
 open(SATURATION, "> $saturation") || die "$saturation: $!";
-print SATURATION "#reads\tgenes\tumis\ttxpts\tgenesSubsample\tumiSubsample\ttxptSubsample\n";
-print SATURATION "1\t1\t1\t1\t1\t1\t1\n";
+my @headers=qw(reads nmapped genes umis txpts genesSubsample umiSubsample txptSubsample);
+print SATURATION "#" . join("\t", @headers) . "\n";
+print SATURATION join("\t", (1) x int(@headers) )."\n";
 
 open(WELLSATURATION, "> $wellsaturation") || die "$wellsaturation: $!";
 
@@ -208,6 +209,7 @@ while(1) {
     my $us=int(keys(%$umis_subsample));
     print SATURATION  join("\t", 
                      ($nreads, 
+                      $nmapped,         # includes non-unique, reverse and invalid CBC
                       $g, 
                       $u,
                       umi_correction($u,$maxumis*$g),
