@@ -82,9 +82,10 @@ my $nrescued_invalidUMI=0;
 
 my $nignored=0;
 
-my $ninvalidCBC=0;
-my $nmapped_invalidCBC=0;
-my $nrescued_invalidCBC=0;
+## mismatched cell barcodes:
+my $nmmCBC=0;
+my $nmapped_mmCBC=0;
+my $nrescued_mmCBC=0;
 
 my $nmapped=0;
 my $nunimapped=0;
@@ -167,14 +168,14 @@ while(1) {
     ($dum,$dum,$X0) = split(":",$el) if ($el =~ /^X0\:/); # X0: number of best hits (bwa-specific!)
   }
   
-  $nmapped += ($X0 > 0); # $X0 is number of locations to which the read maps
+  $nmapped += ($X0 > 0); # $X0 is number of (equally) optimal locations to which the read maps (one was chosen at random)
   $nunimapped += ($X0 == 1);
-  my $reverse=!!($FLAG & 16);
+  my $reverse= !!($FLAG & 16);
   $nreverse +=  $reverse;
 
   if (! exists $barcodes->{$cbc} && $allow_mm) { 
     $cbc=mismatch::rescue($cbc, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
-    $nrescued_invalidCBC += defined($cbc);
+    $nrescued_mmCBC += defined($cbc);
   } 
 
   ## count only reads with valid barcode, uniquely mapping in the sense orientation:
@@ -193,8 +194,8 @@ while(1) {
       $tc->{'#reverse'}{$cbc}{$umi} += $reverse; # (may overlap with multimappers)
     }
   } else { 
-    $ninvalidCBC++;
-    $nmapped_invalidCBC += ($X0 > 0);
+    $nmmCBC++;
+    $nmapped_mmCBC += ($X0 > 0);
   } 
   $nreads++;
 } continue { 
@@ -349,16 +350,15 @@ print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
 print SOUT "valid barcode, invalid UMI: " , stat_format($ninvalidUMI, $nreads);
-print SOUT "rescued invalid CBC: " , stat_format($nrescued_invalidCBC, $nreads);
-print SOUT "invalid CBC: " , stat_format($ninvalidCBC, $nreads );
-print SOUT "rescued invalid UMIs: " , stat_format($nrescued_invalidUMI, $nreads);
-print SOUT "mapped read, but invalid CBC: " , stat_format($nmapped_invalidCBC, $nunimapped);
-print SOUT "total reads = unique&valid + ignored + invalidCBC + invalidUMI:\n" 
-    .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $ninvalidCBC, $ninvalidUMI);
+print SOUT "rescued mismatched CBC: " , stat_format($nrescued_mmCBC, $nreads);
+print SOUT "unknown CBC: " , stat_format($nmmCBC, $nreads );
+print SOUT "mapped read, but  CBC: " , stat_format($nmapped_mmCBC, $nunimapped);
+print SOUT "total reads = unique&valid + ignored + mismatched CBC + invalidUMI:\n" 
+    .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $nmmCBC, $ninvalidUMI);
 
 $nreads /= 100;
-print SOUT "%% unique&valid + ignored + invalidCBC + invalidUMI:\n" 
+print SOUT "%% unique&valid + ignored + mmCBC + invalidUMI:\n" 
     .     sprintf("100%% = %.1f + %.1f + %.1f + %.1f\n", 
-                  $trc/$nreads, $nignored/$nreads, $ninvalidCBC/$nreads, $ninvalidUMI/$nreads);
+                  $trc/$nreads, $nignored/$nreads, $nmmCBC/$nreads, $ninvalidUMI/$nreads);
 
 close SOUT;
