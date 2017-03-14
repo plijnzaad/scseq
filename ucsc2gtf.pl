@@ -4,8 +4,8 @@ use tools;
 
 ### converts UCSC table file (mysql table with headers
 ### '#bin,name,chrom,strand,txStart,txEnd,cdsStart,cdsEnd,exonCount,exonStarts,exonEnds')
-### to a GTF file (-out argument), and mapping from gene -> isoform transcript ids
-### (in format: gene.'__'. chromosome \t refseqid '__' chromosome '__' 1
+### to a GTF file (-out argument), and also a mapping (-m argument) from gene -> transcripts/isoforms (isoform ids
+### are in format: gene.'__'. chromosome \t refseqid '__' chromosome '__' number
 ### The addition of chromosome name is needed for alternate locus groups (i.e. alternate partial assemblies; typically
 ### for part of the other half of a diploid genome), as they often have the same genes mapping there.
 ### Looks like the --utr=3,5 only outputs the 3 or 5' UTRs, in weird format: 
