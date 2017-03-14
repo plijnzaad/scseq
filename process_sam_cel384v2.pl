@@ -111,7 +111,7 @@ my $saturation    = "$prefix-saturation.txt";
 my $wellsaturation    = "$prefix-wellsaturation.txt";
 
 open(SATURATION, "> $saturation") || die "$saturation: $!";
-my @headers=qw(reads nmapped genes umis txpts genesSubsample umiSubsample txptSubsample);
+my @headers=qw(reads nmapped genes umis txpts);
 print SATURATION "#" . join("\t", @headers) . "\n";
 print SATURATION join("\t", (1) x int(@headers) )."\n";
 
@@ -120,8 +120,6 @@ open(WELLSATURATION, "> $wellsaturation") || die "$wellsaturation: $!";
 my $sample_every = 10_000;
 my $genes_seen={};                      # cumulative
 my $umis_seen={};                       # cumulative
-my $genes_subsample={};              
-my $umis_subsample={};
 my $nrefgenes=0;
 my $nERCCs=0;
 
@@ -185,8 +183,6 @@ while(1) {
       $tc->{$RNAME}{$cbc}{$umi}++; 
       $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slowish)
       $umis_seen->{$RNAME.$umi}++;
-      $genes_subsample->{$RNAME}++;
-      $umis_subsample->{$RNAME.$umi}++;
       # note: invalid umi's are filtered out later
     } else {
       $nignored++;
@@ -205,19 +201,12 @@ while(1) {
   if ($nreads % $sample_every == 0 || eof(IN) ) { 
     my $g=int(keys(%$genes_seen));
     my $u=int(keys(%$umis_seen));
-    my $gs=int(keys(%$genes_subsample));
-    my $us=int(keys(%$umis_subsample));
     print SATURATION  join("\t", 
                      ($nreads, 
                       $nmapped,         # includes non-unique, reverse and invalid CBC
                       $g, 
                       $u,
-                      umi_correction($u,$maxumis*$g),
-                      $gs, 
-                      $us,
-                      umi_correction($us, $maxumis*$gs))) . "\n";
-    $genes_subsample = {};
-    $umis_subsample = {};
+                      umi_correction($u,$maxumis*$g))) . "\n";
   }
   warn int($nreads/1000_0000) . " million reads processed\n" if $nreads % 1000_000 == 0;
   last READ if eof(IN);
