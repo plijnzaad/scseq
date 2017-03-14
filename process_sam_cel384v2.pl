@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 ## script to demultiplex CELSeq2 single-cell RNA seq data, do the bookkeeping and convert reads to txpt counts
-## original writtten by Dominic Grün and Lennart Kester
+## original writtten by Dominic Grün and Lennart Kester. Heavily modified by Philip Lijnzaad <plijnzaad@gmail.çom>.
+
 use strict;
 
 use Carp;
@@ -243,6 +244,7 @@ print OUTT "\n";
 
 ## gather read counts, umi counts and transcript counts
 my $trc = 0;
+my $nsaturated_umis=0;
 
 GENE:
 foreach my $gene (sort keys %$tc) {
@@ -251,8 +253,8 @@ foreach my $gene (sort keys %$tc) {
   print OUTC $gene;
 WELL:
   foreach my $cbc (@wells) {
-    my $n = 0;                          # distinct UMIs for this gene+cell
-    my $rc = 0;                         # total reads for this gene+cell
+    my $n = 0;                          # distinct UMIs for this gene+well
+    my $rc = 0;                         # total reads for this gene+well
     my $umihash=$tc->{$gene}{$cbc};
     my @umis = keys %{$umihash};
 
@@ -286,7 +288,8 @@ WELL:
       $rc += $reads; # total valid (=uniquely sense-mapped) reads for this gene+cell
     }                                   # UMI
     $trc += $rc unless $gene =~ /^#/;
-    $n = $n - 0.5 if ($n == $maxumis); # saturation correction PL: @@@ keep count of this?
+    $nsaturated_umis += ($n == $maxumis);
+    $n = $n - 0.5 if ($n == $maxumis);  # saturation correction
     my $txpts = $n;                      # used only for '#IGNORED' etc. @@@fix this
     $txpts = -log(1 - ($n/$maxumis)) * $maxumis unless ($gene =~ /^#/ ); # binomial correction
 
@@ -360,5 +363,5 @@ $nreads /= 100;
 print SOUT "%% unique&valid + ignored + mmCBC + invalidUMI:\n" 
     .     sprintf("100%% = %.1f + %.1f + %.1f + %.1f\n", 
                   $trc/$nreads, $nignored/$nreads, $nmmCBC/$nreads, $ninvalidUMI/$nreads);
-
+print SOUT "gene+well combinations that used up all umis: $nsaturated_umis\n";
 close SOUT;
