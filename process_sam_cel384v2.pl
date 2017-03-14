@@ -15,10 +15,10 @@ use mismatch;
 my $version=getversion($0);
 warn "Running $0, version $version\nwith arguments:\n  @ARGV\n";
 
-our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $ref, $rescue_umis, $help);
+our ($barfile, $umi_len, $cbc_len, $allow_mm, $prefix, $ref, $help);
 
 my $usage = "
-Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH   [--prefix name ] [ -allow_mm=1 ] [ --rescue_umis ] file.bam [ file2.bam ...] 
+Usage: $0 --barcodefile barcodes.csv --umi_len UMILENGTH --cbc_len CBCLENGTH   [--prefix name ] [ -allow_mm=1 ] file.bam [ file2.bam ...] 
 
 Arguments: 
 
@@ -36,13 +36,15 @@ Options:
 --ref name          Name of the reference genome (only for logging)
 ";
 
+### There used to be code to deal with UMIs containing N's, but they are extremely rare and not worth rescuing given
+### the complexity of it. They were removed after version v15  (14 march 2017, commit 8fcc58d11a20b0f2cbdc978edfa3742c4e32a900)
+
 die $usage unless GetOptions('barcodefile=s'=> \$barfile,
                              'umi_len=i'=> \$umi_len,
                              'cbc_len=i'=> \$cbc_len,
                              'allow_mm=i'=> \$allow_mm,
                              'prefix=s' => \$prefix,
                              'ref=s' => \$ref,
-                             'rescue_umis'=> \$rescue_umis,
                              'help|h' => \$help);
 my @bams=@ARGV;
 
@@ -79,7 +81,6 @@ $barcodes_mixedcase=undef;              # not used in remainder, delete to avoid
 my $nreads = 0;
 my $nreverse=0;
 my $ninvalidUMI=0;
-my $nrescued_invalidUMI=0;
 
 my $nignored=0;
 
@@ -160,9 +161,14 @@ while(1) {
   }
   die "$0: could not find cbc= or umi= in id $QNAME of the files @bams " unless $cbc &&  $umi;
 
+  if ($umi =~ /N/i) { # very rare (< 0.1%), not worth rescuing. See v15 for code that did.
+    $ninvalidUMI++;
+    $nreads++;
+    next READ;
+  }
+
   my $X0 = 0;
   my $dum = 'NA';
-
   foreach my $el (@rest){
     # ($dum,$dum,$NM) = split(":",$el) if ($el =~ /^NM\:/); # NM: number of mismatches
     # ($dum,$dum,$XA) = split(":",$el) if ($el =~ /^XA\:/); # XA: number of alternative hits (chr,pos,CIGAR,NM;)+
@@ -178,14 +184,13 @@ while(1) {
     $cbc=mismatch::rescue($cbc, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
     $nrescued_mmCBC += defined($cbc);
   } 
-
+  
   ## count only reads with valid barcode, uniquely mapping in the sense orientation:
   if ($cbc && exists $barcodes->{$cbc}){
     if ($X0 == 1 && ! $reverse){ 
       $tc->{$RNAME}{$cbc}{$umi}++; 
       $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slowish)
       $umis_seen->{$RNAME.$umi}++;
-      # note: invalid umi's are filtered out later
     } else {
       $nignored++;
       $tc->{'#IGNORED'}{$cbc}{$umi} ++;
@@ -258,31 +263,8 @@ WELL:
     my $umihash=$tc->{$gene}{$cbc};
     my @umis = keys %{$umihash};
 
-    if ( $rescue_umis && $gene !~ /#/ ) { # preprocessing to rescue UMI's containing N's
-      my @Ns=grep(/N/i, @umis);
-      if (@Ns) { 
-        my @noNs=grep(! /N/i, @umis);
-
-        my $oldus=join(',', keys %$umihash);
-        my $h=cleanup_umis(\@noNs, \@Ns, $umihash );
-        my $newus=join(',', keys %$umihash);
-        warn "UMIn: $gene\t$cbc\t$oldus=>$newus\tdisc:$h->{discarded} resc:$h->{rescued}\n";
-        $tc->{$gene}{$cbc} = $umihash;
-        @umis = keys %{$umihash};
-
-        $ninvalidUMI += $h->{discarded};
-        $nrescued_invalidUMI += $h->{rescued};
-      }
-    }
-
   UMI:
     foreach my $umi (@umis) {
-      if ($umi =~ /N/i  && $gene !~ /#/) { 
-        confess "gene $gene, cbc $cbc, umi $umi contains N, should not happen when rescueing UMIs" 
-            if $rescue_umis;    # should have become 'X' or disappeared altogether
-        $ninvalidUMI ++ ;
-        next UMI;
-      }
       my $reads=$tc->{$gene}{$cbc}{$umi};
       $n += ($reads > 0);
       $rc += $reads; # total valid (=uniquely sense-mapped) reads for this gene+cell
@@ -302,44 +284,6 @@ WELL:
   print OUTC "\n";
 }                                       # GENE
 
-sub cleanup_umis { 
-  ## costly. Deletes invalid UMIs from the hash, converts useable ones and returns number of deleted and rescued UMIs
-  my ($noNs,$Ns, $umihash)=@_;          # umihash contains read counts per umi
-  my @newNs=();
-  my($nrescued, $ndiscarded)=(0,0);
-
- UMI:
-  for my $N ( @$Ns ) { 
-    if ($umihash->{$N} >1) { 
-      # only keep singles, as 2 x ACTN could have come from ACTT and ACTA
-      delete $umihash->{$N};
-      $ndiscarded++;
-      next UMI;
-    }
-    my $re=$N;
-    $re =~ s/[Nn]/./g; 
-    $re="^$re\$";
-    my @hits=grep( /$re/, @$noNs);
-
-    if ( @hits ) {                 
-      # e.g. /ACT./ ~ ACTG but could represent ACTA => 2 umis
-      delete $umihash->{$N};
-      $ndiscarded++;
-      next UMI;
-    }
-    ## In case you can't tolerate any N's: 
-    my $new=$N;
-    $new =~ s/[Nn]/X/g;   
-    $umihash->{$new} = $umihash->{$N};
-    delete $umihash->{$N};
-    $nrescued++;
-  }                                     # UMI
-
-  { discarded=>$ndiscarded, 
-    rescued=>$nrescued,
-  };
-}                                       # cleanup_umis
-
 sub stat_format { 
   my($part, $total)=@_;
   sprintf("%s / %s   = %.1f %%\n", commafy($part), commafy($total), 100*$part/$total);
@@ -351,14 +295,13 @@ print SOUT "reference transcriptome: $ref\n";
 print SOUT "        contains $nERCCs ERCCs and " . commafy($nrefgenes) . " genes\n";
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
+print SOUT "invalid UMI: " , stat_format($ninvalidUMI, $nreads);
 print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
-print SOUT "valid barcode, invalid UMI: " , stat_format($ninvalidUMI, $nreads);
 print SOUT "rescued mismatched CBC: " , stat_format($nrescued_mmCBC, $nreads);
 print SOUT "unknown CBC: " , stat_format($nmmCBC, $nreads );
 print SOUT "mapped read, but  CBC: " , stat_format($nmapped_mmCBC, $nunimapped);
 print SOUT "total reads = unique&valid + ignored + mismatched CBC + invalidUMI:\n" 
     .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $nmmCBC, $ninvalidUMI);
-
 $nreads /= 100;
 print SOUT "%% unique&valid + ignored + mmCBC + invalidUMI:\n" 
     .     sprintf("100%% = %.1f + %.1f + %.1f + %.1f\n", 
