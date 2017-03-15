@@ -6,6 +6,7 @@ use strict;
 
 use Carp;
 use File::Basename;
+use FileHandle;
 use Getopt::Long;
 
 use tools;
@@ -114,18 +115,27 @@ my $cmd = "($samtools view -H $bams[0]; " . join("; ", map { "samtools view $_" 
 
 open(IN,"$cmd |") || die "$cmd: $!";
 my $saturation    = "$prefix-saturation.txt";
-my $wellsaturation    = "$prefix-wellsaturation.txt";
 
 open(SATURATION, "> $saturation") || die "$saturation: $!";
 my @headers=qw(reads nmapped nvalid genes umis txpts);
 print SATURATION "#" . join("\t", @headers) . "\n";
 print SATURATION join("\t", (1) x int(@headers) )."\n";
 
-open(WELLSATURATION, "> $wellsaturation") || die "$wellsaturation: $!";
+## well saturation: open three files
+my $wellsat_prefix    = "$prefix-wellsat";
+my $wellsat_files={};
+
+for my $type ( qw(genes umis txpts)  ) {
+  my $file="$wellsat_prefix-$type.txt";
+  my $fh = FileHandle->new("> $file") || die "$file: $!";
+  $wellsat_files->{$type}=$fh;
+  print $fh "nreads\t" . join("\t", @wells) . "\n";
+}
 
 my $sample_every = 10_000;
 my $genes_seen={};                      # cumulative
 my $umis_seen={};                       # cumulative
+my $wellwise_seen={};                   # keys are those of %$wellsat_files
 
 sub umi_correction { 
   my($n, $maxumis)=@_;
@@ -194,6 +204,9 @@ while(1) {
 
       $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slower)
       $umis_seen->{$RNAME.$umi}++;
+
+      $wellwise_seen->{'genes'}{$cbc}{$RNAME}++;
+      $wellwise_seen->{'umis'}{$cbc}{$RNAME.$umi}++;
     } else {
       $nignored++;
       $tc->{'#IGNORED'}{$cbc}{$umi} ++;
@@ -218,6 +231,21 @@ while(1) {
                       $g, 
                       $u,
                       umi_correction($u,$maxumis*$g))) . "\n";
+
+    ## note: for the well-wise counts, only print $nreads; get the rest from the overall saturation counts
+    my $fh;
+
+    my @genecounts = map { int keys %{$wellwise_seen->{'genes'}{$_}} } @wells;
+    $fh=$wellsat_files->{'genes'};
+    print $fh "$nreads\t" .  join("\t", @genecounts) .  "\n";
+
+    my @umicounts = map { int keys %{$wellwise_seen->{'umis'}{$_}} } @wells;
+    $fh=$wellsat_files->{'umis'};
+    print $fh "$nreads\t" .  join("\t", @umicounts) .  "\n";
+
+    my @txptcounts = map { umi_correction( $umicounts[$_], $maxumis*$genecounts[$_]);  } 1..int(@wells);
+    $fh=$wellsat_files->{'txpts'};
+    print $fh  "$nreads\t" .  join("\t", @umicounts) .  "\n";
   }
   warn int($nreads/1_000_000) . " million reads processed\n" if $nreads % 1_000_000 == 0;
   last READ if eof(IN);
@@ -226,6 +254,11 @@ while(1) {
 
 close(IN) || die "$cmd: $!";
 close(SATURATION) || die "$saturation: $!";
+foreach my $type (keys %$wellsat_files ) {
+  my $fh= $wellsat_files->{$type};
+  $fh->close() || die "Well saturation file for type $type :$!";
+}
+
 
 my $coutt   = "$prefix.coutt.csv";
 my $coutb   = "$prefix.coutb.csv";
