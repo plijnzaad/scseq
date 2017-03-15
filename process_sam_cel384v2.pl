@@ -117,7 +117,7 @@ open(IN,"$cmd |") || die "$cmd: $!";
 my $saturation    = "$prefix-saturation.txt";
 
 open(SATURATION, "> $saturation") || die "$saturation: $!";
-my @headers=qw(reads nmapped nvalid genes umis txpts);
+my @headers=qw(reads nmapped nvalid genes umis);
 print SATURATION "#" . join("\t", @headers) . "\n";
 print SATURATION join("\t", (1) x int(@headers) )."\n";
 
@@ -125,7 +125,7 @@ print SATURATION join("\t", (1) x int(@headers) )."\n";
 my $wellsat_prefix    = "$prefix-wellsat";
 my $wellsat_files={};
 
-for my $type ( qw(genes umis txpts)  ) {
+for my $type ( qw(genes umis)  ) {
   my $file="$wellsat_prefix-$type.txt";
   my $fh = FileHandle->new("> $file") || die "$file: $!";
   $wellsat_files->{$type}=$fh;
@@ -139,6 +139,7 @@ my $wellwise_seen={};                   # keys are those of %$wellsat_files
 
 sub umi_correction { 
   my($n, $maxumis)=@_;
+  return 'NA' if $maxumis <= 1;
   $n= $n - 0.5 if $n >= $maxumis;
   sprintf("%.2f", -$maxumis*log(1 - ($n/$maxumis)));
 }
@@ -243,9 +244,6 @@ while(1) {
     $fh=$wellsat_files->{'umis'};
     print $fh "$nreads\t" .  join("\t", @umicounts) .  "\n";
 
-    my @txptcounts = map { umi_correction( $umicounts[$_], $maxumis*$genecounts[$_]);  } 1..int(@wells);
-    $fh=$wellsat_files->{'txpts'};
-    print $fh  "$nreads\t" .  join("\t", @umicounts) .  "\n";
   }
   warn int($nreads/1_000_000) . " million reads processed\n" if $nreads % 1_000_000 == 0;
   last READ if eof(IN);
