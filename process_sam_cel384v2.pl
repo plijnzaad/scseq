@@ -78,10 +78,11 @@ if ($allow_mm) {
 $barcodes_mixedcase=undef;              # not used in remainder, delete to avoid confusion
 
 
-my $nreads = 0;
+my $nreads = 0;                         # everything
 my $nreverse=0;
 my $ninvalidUMI=0;
 
+my $nvalid=0;
 my $nignored=0;
 
 ## mismatched cell barcodes:
@@ -91,6 +92,8 @@ my $nrescued_mmCBC=0;
 
 my $nmapped=0;
 my $nunimapped=0;
+my $nrefgenes=0;
+my $nERCCs=0;
 
 my $tc = {};
 
@@ -114,7 +117,7 @@ my $saturation    = "$prefix-saturation.txt";
 my $wellsaturation    = "$prefix-wellsaturation.txt";
 
 open(SATURATION, "> $saturation") || die "$saturation: $!";
-my @headers=qw(reads nmapped genes umis txpts);
+my @headers=qw(reads nmapped nvalid genes umis txpts);
 print SATURATION "#" . join("\t", @headers) . "\n";
 print SATURATION join("\t", (1) x int(@headers) )."\n";
 
@@ -123,8 +126,6 @@ open(WELLSATURATION, "> $wellsaturation") || die "$wellsaturation: $!";
 my $sample_every = 10_000;
 my $genes_seen={};                      # cumulative
 my $umis_seen={};                       # cumulative
-my $nrefgenes=0;
-my $nERCCs=0;
 
 sub umi_correction { 
   my($n, $maxumis)=@_;
@@ -134,7 +135,7 @@ sub umi_correction {
 
 HEADERLINE:
 while(<IN> ) {
-  ## loop is shifted one readline so final printing of SATURATION is OK
+  ## loop is shifted one readline so final printing of SATURATION is not skipped
   if ( /^\@SQ/ ){
     my ($tag, $name, @rest)=split("\t", $_);
     if ($name =~ /^ERCC-0/) { $nERCCs++; } else { $nrefgenes++; }
@@ -186,10 +187,12 @@ while(1) {
   } 
   
   ## count only reads with valid barcode, uniquely mapping in the sense orientation:
-  if ($cbc && exists $barcodes->{$cbc}){
+  if ($cbc && exists $barcodes->{$cbc}) {
     if ($X0 == 1 && ! $reverse){ 
+      $nvalid++;
       $tc->{$RNAME}{$cbc}{$umi}++; 
-      $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slowish)
+
+      $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slower)
       $umis_seen->{$RNAME.$umi}++;
     } else {
       $nignored++;
@@ -210,12 +213,13 @@ while(1) {
     my $u=int(keys(%$umis_seen));
     print SATURATION  join("\t", 
                      ($nreads, 
-                      $nmapped,         # includes non-unique, reverse and invalid CBC
+                      $nmapped,         # includes non-unique and/or reverse and/or invalid CBC
+                      $nvalid,         # only the valid reads (those used in downstream analysis)
                       $g, 
                       $u,
                       umi_correction($u,$maxumis*$g))) . "\n";
   }
-  warn int($nreads/1000_0000) . " million reads processed\n" if $nreads % 1000_000 == 0;
+  warn int($nreads/1_000_000) . " million reads processed\n" if $nreads % 1_000_000 == 0;
   last READ if eof(IN);
   $_ = <IN>;
 }                                        # READ
