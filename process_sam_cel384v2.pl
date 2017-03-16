@@ -81,8 +81,9 @@ $barcodes_mixedcase=undef;              # not used in remainder, delete to avoid
 
 
 my $nreads = 0;                         # everything
-my $nreverse=0;
 my $ninvalidUMI=0;
+my $nantisense=0;
+my $nunisense=0;
 
 my $nvalid=0;
 my $nignored=0;
@@ -190,8 +191,9 @@ while(1) {
   
   $nmapped += ($X0 > 0); # $X0 is number of (equally) optimal locations to which the read maps (one was chosen at random)
   $nunimapped += ($X0 == 1);
-  my $reverse= !!($FLAG & 16);
-  $nreverse +=  $reverse;
+  my $antisense= !!($FLAG & 16);
+  $nantisense +=  $antisense;
+  $nunisense += ( ($X0 == 1) && !$antisense);
 
   if (! exists $barcodes->{$cbc} && $allow_mm) { 
     $cbc=mismatch::rescue($cbc, $mismatch_REs);      # gives back the barcode without mismatches (if it can be found)
@@ -200,7 +202,7 @@ while(1) {
   
   ## count only reads with valid barcode, uniquely mapping in the sense orientation:
   if ($cbc && exists $barcodes->{$cbc}) {
-    if ($X0 == 1 && ! $reverse){ 
+    if ($X0 == 1 && ! $antisense){ 
       $nvalid++;
       $tc->{$RNAME}{$cbc}{$umi}++; 
 
@@ -215,7 +217,7 @@ while(1) {
       ## keep track of some (non-exclusive!) subsets of this
       $tc->{'#unmapped'}{$cbc}{$umi} += ($X0 == 0 );
       $tc->{'#multimapped'}{$cbc}{$umi} += ($X0 > 1 );
-      $tc->{'#reverse'}{$cbc}{$umi} += $reverse; # (may overlap with multimappers)
+      $tc->{'#antisense'}{$cbc}{$umi} += $antisense; # (may overlap with multimappers)
     }
   } else { 
     $nmmCBC++;
@@ -228,8 +230,8 @@ while(1) {
     my $u=int(keys(%$umis_seen));
     print SATURATION  join("\t", 
                      ($nreads, 
-                      $nmapped,         # includes non-unique and/or reverse and/or invalid CBC
-                      $nvalid,         # only the valid reads (those used in downstream analysis)
+                      $nmapped,         # includes non-unique and/or antisense and/or invalid CBC
+                      $nvalid,          # only the valid reads (those used in downstream analysis)
                       $g, 
                       $u,
                       umi_correction($u,$maxumis*$g))) . "\n";
@@ -319,18 +321,22 @@ $ref = "unknown" unless $ref;
 
 print SOUT "reference transcriptome: $ref\n";
 print SOUT "        contains $nERCCs ERCCs and " . commafy($nrefgenes) . " genes\n";
+print SOUT "invalid UMI (all other numbers refer to valid UMIs): " , stat_format($ninvalidUMI, $nreads);
 print SOUT "number of mapped reads: " , stat_format($nmapped, $nreads);
 print SOUT "uniquely mapping reads: ", stat_format($nunimapped, $nreads);
-print SOUT "invalid UMI: " , stat_format($ninvalidUMI, $nreads);
-print SOUT "uniquely with valid cbc and umi: " , stat_format($trc, $nreads);
+print SOUT "antisense mapping reads: ", stat_format($nantisense, $nreads);
+print SOUT "uniquely sense mapping reads: ", stat_format($nunisense, $nreads);
+print SOUT "uniquely sense mapping with valid CBC: " , stat_format($trc, $nreads);
+warn "*** trc ($trc) should be == nvalid ($nvalid) *** \n" if $trc != $nvalid;
 print SOUT "rescued mismatched CBC: " , stat_format($nrescued_mmCBC, $nreads);
 print SOUT "unknown CBC: " , stat_format($nmmCBC, $nreads );
-print SOUT "mapped read, but  CBC: " , stat_format($nmapped_mmCBC, $nunimapped);
+print SOUT "mapped read, but unknown CBC: " , stat_format($nmapped_mmCBC, $nunisense);
 print SOUT "total reads = unique&valid + ignored + mismatched CBC + invalidUMI:\n" 
     .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $nmmCBC, $ninvalidUMI);
 $nreads /= 100;
 print SOUT "%% unique&valid + ignored + mmCBC + invalidUMI:\n" 
     .     sprintf("100%% = %.1f + %.1f + %.1f + %.1f\n", 
                   $trc/$nreads, $nignored/$nreads, $nmmCBC/$nreads, $ninvalidUMI/$nreads);
+## note: should be slightly less than 100%: we're threw out the invalid UMIs
 print SOUT "gene+well combinations that used up all umis: $nsaturated_umis\n";
 close SOUT;
