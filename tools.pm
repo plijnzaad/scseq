@@ -508,9 +508,9 @@ sub getversion {
   my ($fullpath)=`which $path`;
   my ($script,$dir) = fileparse($fullpath);
   chomp($script);
-  my $ls=`git ls-files $script`;
+  my $ls=`git ls-files $script 2>/dev/null`;
   return "not under version control" if ($ls ne $script);
-  my $version=`cd $dir && git describe --match 'v[0-9]*' --tags --dirty`;
+  my $version=`cd $dir && git describe --match 'v[0-9]*' --tags --dirty 2> /dev/null`;
   chomp($version);
   $version='UNKNOWN' unless $version;
   $version;
