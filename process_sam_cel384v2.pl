@@ -119,7 +119,7 @@ open(IN,"$cmd |") || die "$cmd: $!";
 my $saturation    = "$prefix-saturation.txt";
 
 open(SATURATION, "> $saturation") || die "$saturation: $!";
-my @headers=qw(reads nmapped nvalid genes umis);
+my @headers=qw(reads nmapped nvalid genes umis txpts);
 print SATURATION "#" . join("\t", @headers) . "\n";
 print SATURATION join("\t", (1) x int(@headers) )."\n";
 
@@ -131,7 +131,7 @@ for my $type ( qw(genes umis)  ) {
   my $file="$wellsat_prefix-$type.txt";
   my $fh = FileHandle->new("> $file") || die "$file: $!";
   $wellsat_files->{$type}=$fh;
-  print $fh "nreads\t" . join("\t", @wells) . "\n";
+  print $fh "reads\t" . join("\t", @wells) . "\n";
 }
 
 my $sample_every = 10_000;
@@ -229,14 +229,14 @@ while(1) {
     my $g=int(keys(%$genes_seen));
     my $u=int(keys(%$umis_seen));
     print SATURATION  join("\t", 
-                     ($nreads, 
-                      $nmapped,         # includes non-unique and/or antisense and/or invalid CBC
-                      $nvalid,          # only the valid reads (those used in downstream analysis)
-                      $g, 
-                      $u,
-                      umi_correction($u,$maxumis*$g))) . "\n";
-
-    ## note: for the well-wise counts, only print $nreads; get the rest from the overall saturation counts
+                           ($nreads, 
+                            $nmapped, # includes non-unique and/or antisense and/or invalid CBC
+                            $nvalid, # only the valid reads (those used in downstream analysis)
+                            $g, 
+                            $u,
+                            umi_correction($u,$maxumis*$g))) . "\n";
+    
+    ## note: for the wellwise counts, only print $nreads; get the rest from the overall saturation counts
     my $fh;
 
     my @genecounts = map { int keys %{$wellwise_seen->{'genes'}{$_}} } @cbcs;
