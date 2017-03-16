@@ -69,7 +69,8 @@ sub byletterandnumber { # sort the barcodes by their ids (which may contain pref
   ($Sa cmp $Sb) || ($Na <=>  $Nb);
 }
 
-my @wells = sort byletterandnumber (keys %$barcodes); 
+my @cbcs = sort byletterandnumber (keys %$barcodes); # e.g. 'AGCGTT'
+my @wells = map { $barcodes->{$_} } @cbcs;           # e.g. 'B6'
 
 my $mismatch_REs=undef;
 
@@ -236,11 +237,11 @@ while(1) {
     ## note: for the well-wise counts, only print $nreads; get the rest from the overall saturation counts
     my $fh;
 
-    my @genecounts = map { int keys %{$wellwise_seen->{'genes'}{$_}} } @wells;
+    my @genecounts = map { int keys %{$wellwise_seen->{'genes'}{$_}} } @cbcs;
     $fh=$wellsat_files->{'genes'};
     print $fh "$nreads\t" .  join("\t", @genecounts) .  "\n";
 
-    my @umicounts = map { int keys %{$wellwise_seen->{'umis'}{$_}} } @wells;
+    my @umicounts = map { int keys %{$wellwise_seen->{'umis'}{$_}} } @cbcs;
     $fh=$wellsat_files->{'umis'};
     print $fh "$nreads\t" .  join("\t", @umicounts) .  "\n";
 
@@ -268,19 +269,9 @@ open(OUTB, "> $coutb") || die "$coutb: $!";
 open(OUTC, "> $coutc") || die "$coutc: $!";
 open (SOUT, "> $sout") || die "$sout: $!";
 
-print OUTB "GENEID";
-print OUTC "GENEID";
-print OUTT "GENEID";
-
-foreach my $cbc (@wells){
-  my $id=$barcodes->{$cbc};
-  print OUTB "\t$id";
-  print OUTC "\t$id";
-  print OUTT "\t$id";
-}	
-print OUTB "\n";
-print OUTC "\n";
-print OUTT "\n";	
+print OUTT "GENEID\t".join("\t", @wells)."\n";
+print OUTB "GENEID\t".join("\t", @wells)."\n";
+print OUTC "GENEID\t".join("\t", @wells)."\n";
 
 ## gather read counts, umi counts and transcript counts
 my $trc = 0;
@@ -292,7 +283,7 @@ foreach my $gene (sort keys %$tc) {
   print OUTT $gene;
   print OUTC $gene;
 WELL:
-  foreach my $cbc (@wells) {
+  foreach my $cbc (@cbcs) {
     my $n = 0;                          # distinct UMIs for this gene+well
     my $rc = 0;                         # total reads for this gene+well
     my $umihash=$tc->{$gene}{$cbc};
