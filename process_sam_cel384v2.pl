@@ -226,8 +226,8 @@ while(1) {
   $nreads++;
 } continue { 
   if ($nreads % $sample_every == 0 || eof(IN) ) { 
-    my $g=int(keys(%$genes_seen));
-    my $u=int(keys(%$umis_seen));
+    my $g=int(keys(%$genes_seen));      # includes those 
+    my $u=int(keys(%$umis_seen));       #                 with unknown CBC
     print SATURATION  join("\t", 
                            ($nreads, 
                             $nmapped, # includes non-unique and/or antisense and/or invalid CBC
@@ -236,7 +236,8 @@ while(1) {
                             $u,
                             umi_correction($u,$maxumis*$g))) . "\n";
     
-    ## note: for the wellwise counts, only print $nreads; get the rest from the overall saturation counts
+    ## note: for the wellwise counts, only print $nreads; get the rest from the 
+    ## overall saturation counts
     my $fh;
 
     my @genecounts = map { int keys %{$wellwise_seen->{'genes'}{$_}} } @cbcs;
@@ -259,7 +260,6 @@ foreach my $type (keys %$wellsat_files ) {
   my $fh= $wellsat_files->{$type};
   $fh->close() || die "Well saturation file for type $type :$!";
 }
-
 
 my $coutt   = "$prefix.coutt.csv";
 my $coutb   = "$prefix.coutb.csv";
@@ -331,7 +331,7 @@ warn "*** trc ($trc) should be == nvalid ($nvalid) *** \n" if $trc != $nvalid;
 print SOUT "rescued mismatched CBC: " , stat_format($nrescued_mmCBC, $nreads);
 print SOUT "unknown CBC: " , stat_format($nmmCBC, $nreads );
 print SOUT "mapped read, but unknown CBC: " , stat_format($nmapped_mmCBC, $nunisense);
-print SOUT "total reads = unique&valid + ignored + mismatched CBC + invalidUMI:\n" 
+print SOUT "total reads = unique&valid + ignored + unknown CBC + invalidUMI:\n" 
     .     sprintf("%d = %d + %d + %d + %d\n", $nreads,$trc, $nignored, $nmmCBC, $ninvalidUMI);
 $nreads /= 100;
 print SOUT "%% unique&valid + ignored + mmCBC + invalidUMI:\n" 
