@@ -205,12 +205,12 @@ while(1) {
     if ($X0 == 1 && ! $antisense){ 
       $nvalid++;
       $tc->{$RNAME}{$cbc}{$umi}++; 
-
-      $genes_seen->{$RNAME}++;          ## unless $RNAME =~ /^ERCC-/ (slower)
-      $umis_seen->{$RNAME.$umi}++;
-
-      $wellwise_seen->{'genes'}{$cbc}{$RNAME}++;
-      $wellwise_seen->{'umis'}{$cbc}{$RNAME.$umi}++;
+      if ($RNAME !~ /^ERCC-/ ) { 
+        $genes_seen->{$RNAME}++ ;
+        $umis_seen->{$RNAME.$umi}++;
+        $wellwise_seen->{'genes'}{$cbc}{$RNAME}++;
+        $wellwise_seen->{'umis'}{$cbc}{$RNAME.$umi}++;
+      }
     } else {
       $nignored++;
       $tc->{'#IGNORED'}{$cbc}{$umi} ++;
