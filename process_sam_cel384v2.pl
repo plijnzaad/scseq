@@ -338,5 +338,5 @@ print SOUT "%% unique&valid + ignored + mmCBC + invalidUMI:\n"
     .     sprintf("100%% = %.1f + %.1f + %.1f + %.1f\n", 
                   $trc/$nreads, $nignored/$nreads, $nmmCBC/$nreads, $ninvalidUMI/$nreads);
 ## note: should be slightly less than 100%: we're threw out the invalid UMIs
-print SOUT "gene+well combinations that used up all umis: $nsaturated_umis\n";
+print SOUT "well+gene combinations that used up all umis: $nsaturated_umis\n";
 close SOUT;
