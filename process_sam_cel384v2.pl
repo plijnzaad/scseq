@@ -31,9 +31,10 @@ file.bam ...        Name(s) of the bam file(s), typically from several lanes. If
 Options:
 --help              This message
 --allow_mm N        How many mismatches to allow in the cell barcodes (default: 0)
-
---prefix name       Prefix for the four output files: NAME.coutt.csv, NAME.coutb.csv, NAME.coutc.csv and NAME.sout
-                    Default is the name of the first bam file without extension and lane number.
+--prefix name       Prefix for the four output files: NAME.coutc.csv, NAME.coutb.csv, NAME.coutt.csv, 
+                    and NAME.sout, for raw read counts, umi counts, and corrected transcript counts and
+                    statistics respectively.  Default is the name of the first bam file without 
+                    extension and lane number.
 --ref name          Name of the reference genome (only for logging)
 ";
 
@@ -261,19 +262,19 @@ foreach my $type (keys %$wellsat_files ) {
   $fh->close() || die "Well saturation file for type $type :$!";
 }
 
-my $coutt   = "$prefix.coutt.csv";
-my $coutb   = "$prefix.coutb.csv";
 my $coutc   = "$prefix.coutc.csv";
+my $coutb   = "$prefix.coutb.csv";
+my $coutt   = "$prefix.coutt.csv";
 my $sout    = "$prefix.sout";
 
-open(OUTT, "> $coutt") || die "$coutt: $!";
-open(OUTB, "> $coutb") || die "$coutb: $!";
 open(OUTC, "> $coutc") || die "$coutc: $!";
+open(OUTB, "> $coutb") || die "$coutb: $!";
+open(OUTT, "> $coutt") || die "$coutt: $!";
 open (SOUT, "> $sout") || die "$sout: $!";
 
-print OUTT "GENEID\t".join("\t", @wells)."\n";
-print OUTB "GENEID\t".join("\t", @wells)."\n";
 print OUTC "GENEID\t".join("\t", @wells)."\n";
+print OUTB "GENEID\t".join("\t", @wells)."\n";
+print OUTT "GENEID\t".join("\t", @wells)."\n";
 
 ## gather read counts, umi counts and transcript counts
 my $trc = 0;
@@ -281,21 +282,21 @@ my $nsaturated_umis=0;
 
 GENE:
 foreach my $gene (sort keys %$tc) {
+  print OUTC $gene;
   print OUTB $gene;
   print OUTT $gene;
-  print OUTC $gene;
 WELL:
   foreach my $cbc (@cbcs) {
-    my $n = 0;                          # distinct UMIs for this gene+well
     my $rc = 0;                         # total reads for this gene+well
+    my $n = 0;                          # distinct UMIs for this gene+well
     my $umihash=$tc->{$gene}{$cbc};
     my @umis = keys %{$umihash};
 
   UMI:
     foreach my $umi (@umis) {
       my $reads=$tc->{$gene}{$cbc}{$umi};
-      $n += ($reads > 0);
       $rc += $reads; # total valid (=uniquely sense-mapped) reads for this gene+cell
+      $n += ($reads > 0);
     }                                   # UMI
     $trc += $rc unless $gene =~ /^#/;
     $nsaturated_umis += ($n == $maxumis);
@@ -303,13 +304,13 @@ WELL:
     my $txpts = $n;                      # used only for '#IGNORED' etc. @@@fix this
     $txpts = -log(1 - ($n/$maxumis)) * $maxumis unless ($gene =~ /^#/ ); # binomial correction
 
-    print OUTB "\t$n";
     print OUTC "\t$rc";
+    print OUTB "\t$n";
     print OUTT "\t$txpts";
   }                                     # WELL
-  print OUTT "\n";
-  print OUTB "\n";
   print OUTC "\n";
+  print OUTB "\n";
+  print OUTT "\n";
 }                                       # GENE
 
 sub stat_format { 
