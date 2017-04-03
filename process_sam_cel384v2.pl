@@ -279,6 +279,7 @@ print OUTT "GENEID\t".join("\t", @wells)."\n";
 ## gather read counts, umi counts and transcript counts
 my $trc = 0;
 my $nsaturated_umis=0;
+my $numi_mismatches=0;
 
 GENE:
 foreach my $gene (sort keys %$tc) {
@@ -292,6 +293,7 @@ WELL:
     my $umihash=$tc->{$gene}{$cbc};
     my @umis = keys %{$umihash};
 
+    $numi_mismatches += umi_mismatches(\@umis);
   UMI:
     foreach my $umi (@umis) {
       my $reads=$tc->{$gene}{$cbc}{$umi};
@@ -340,4 +342,5 @@ print SOUT "%% unique&valid + ignored + mmCBC + invalidUMI:\n"
                   $trc/$nreads, $nignored/$nreads, $nmmCBC/$nreads, $ninvalidUMI/$nreads);
 ## note: should be slightly less than 100%: we're threw out the invalid UMIs
 print SOUT "well+gene combinations that used up all umis: $nsaturated_umis\n";
+print SOUT "UMI mismatches: $numi_mismatches:\n";
 close SOUT;
