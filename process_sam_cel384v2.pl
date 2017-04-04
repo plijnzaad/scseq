@@ -293,7 +293,7 @@ WELL:
     my $umihash=$tc->{$gene}{$cbc};
     my @umis = keys %{$umihash};
 
-    $numi_mismatches += umi_mismatches(\@umis);
+    $numi_mismatches += umi_mismatches(\@umis, $umihash);
   UMI:
     foreach my $umi (@umis) {
       my $reads=$tc->{$gene}{$cbc}{$umi};
