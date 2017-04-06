@@ -29,7 +29,7 @@ being written to disk)
 
 The current protocols have an artefact that tends to produces long
 stretches of polyA (and to a lesser extent polyT). Specifying
-e.g. -trim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.* and
+e.g. --polytrim=A=12,T=18 will delete any occurrence of AAAAAAAAAAAA.* and
 TTTTTTTTTTTTTTTTTT.* from read2. The quality lines are trimmed in the same
 way. (These numbers correspond to roughly 0.1% of the actual occurrences
 in the human transcriptome). In addition, reads can be clipped using the
