@@ -444,11 +444,18 @@ sub execute {
   $status;
 }                                       # execute
 
+sub _checkfilename { 
+  my($file)=@_;
+  my $regex='^[-_a-zA-Z0-9./,+=]+$'; # '; <- fool emacs
+  die "Automatically generated file '$file' contains forbidden characters. 
+(Should match $regex)," unless $file =~ /$regex/;
+}
+
 sub openlog { 
   ## open log for later inclusion in over-all log
   my($template)=@_;
 
-  $template .= "-XXXXXXXX";
+  $template .= "-tmpXXXXXXXX";
 
   my($logdir)="logs";
   if( ! -d $logdir ) { 
@@ -459,6 +466,7 @@ sub openlog {
   { no warnings;
     local($^W)=0;
     my(undef, $log)=tempfile("$logdir/$template", OPEN=>0);
+    _checkfilename($log);
     $log;
   }
 }                                       # openlog
@@ -477,10 +485,11 @@ sub dumplog {
 
 sub opensai { 
   my ($out)=@_;
-  my($template)= "$out-XXXXXXXX";
+  my($template)= "$out-tmpXXXXXXXX";
   { no warnings;
     local($^W)=0;
     my(undef, $sai)=tempfile($template, OPEN=>0, suffix=> ".sai");
+    _checkfilename($sai);
     $sai;
   }
 }
