@@ -520,10 +520,15 @@ sub getversion {
   my $ls=`cd $dir 2>/dev/null && git ls-files $script 2>/dev/null`;
   chomp($ls);
   return "NOT_UNDER_VERSION_CONTROL" if ($ls ne $script);
-  my $version=`cd $dir 2>/dev/null && git describe --match 'v[0-9]*' --tags --dirty 2> /dev/null`;
+  my $branch=`cd $dir 2>/dev/null && git rev-parse --abbrev-ref HEAD`;
+  chomp($branch);
+  my $version=`cd $dir 2>/dev/null && git describe --match 'v[0-9]*' --tags --dirty --always 2> /dev/null`;
   chomp($version);
+  $version =~ s/-(\d+)-g([a-f0-9]+)/-$1-$2/;  ##  trash the silly 'g' prefix, only confuses things
   $version='UNKNOWN' unless $version;
-  $version;
+  ## my $timestamp = `git log -1   --date=iso 2>/dev/null | sed -n '/^Date:/{s/Date: *//;s/ /_/g;p;}' 2>/dev/null `;
+  ## chomp($timestamp);
+  "$branch:$version";
 }                                       # getversion
 
 1;
