@@ -5,7 +5,7 @@ initially developed by Dominic Grün and Alexander van Oudenaarden at the
 [Hubrecht Institute](www.hubrecht.eu/), Utrecht, The Netherlands.
 
 **The current repo will remain frozen here, but is currently developed
-further on [our bitbucket
+further on [the Princess Maxima Center bitbucket
 acccount](https://bitbucket.org/princessmaximacenter/).** [Contact me](mailto:p.lijnzaad@gmailcom) if you want access.
 
 It contains (often heavily modified) code from other people,
