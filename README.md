@@ -5,8 +5,8 @@ initially developed by Dominic Grün and Alexander van Oudenaarden at the
 [Hubrecht Institute](www.hubrecht.eu/), Utrecht, The Netherlands.
 
 **The current repo will remain frozen here, but is currently developed
-further on our bitbucket
-acccount.** [Contact me](mailto:p.lijnzaad@gmailcom) if you want access.
+further on [our bitbucket
+acccount](https://bitbucket.org/princessmaximacenter/).** [Contact me](mailto:p.lijnzaad@gmailcom) if you want access.
 
 It contains (often heavily modified) code from other people,
 specifically from Dominic Grün (now at MPI Freiburg), Lennart Kester and
